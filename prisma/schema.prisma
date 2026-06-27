@@ -1,0 +1,465 @@
+// CIPRIJAL — Sistema de Gestión de Activos TI
+// Fuente de verdad del schema de base de datos
+// Referencia: DISEÑO_BASE_DATOS.md (aprobado Sprint 1.4)
+//
+// NOTA: El índice parcial de asignaciones activas no puede declararse en Prisma.
+// Debe añadirse como SQL raw en la migración que crea asset_assignments:
+//   CREATE UNIQUE INDEX idx_one_active_assignment
+//   ON asset_assignments(asset_id)
+//   WHERE returned_at IS NULL;
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  admin_ti
+  usuario_final
+}
+
+enum Modality {
+  presencial
+  remoto
+}
+
+enum AssetType {
+  desktop
+  laptop
+  raspberry_pi
+  mobile_phone
+  radio
+  printer
+}
+
+enum AssetStatus {
+  registered     // Registrado — pendiente de ubicar o asignar
+  in_storage     // En almacén
+  assigned       // Asignado a un usuario
+  in_maintenance // En mantenimiento
+  decommissioned // Dado de baja definitivamente
+  stolen         // Reportado como robado
+  lost           // Reportado como perdido
+}
+
+enum AssetCondition {
+  new     // Nuevo
+  good    // Buen estado
+  fair    // Estado regular
+  poor    // Estado deficiente
+  damaged // Dañado / inservible
+}
+
+enum IncidentStatus {
+  open
+  in_review
+  in_progress
+  resolved
+  closed
+}
+
+enum Priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum MaintenanceType {
+  preventive
+  corrective
+  warranty_repair
+}
+
+enum MaintenanceStatus {
+  pending
+  in_progress
+  waiting_parts
+  waiting_supplier
+  completed
+  cancelled
+}
+
+enum MaintenanceResult {
+  resolved
+  warranty_sent
+  unrepairable
+  cancelled
+}
+
+enum FrequencyType {
+  monthly
+  quarterly
+  biannual
+  annual
+}
+
+enum DocumentType {
+  invoice
+  warranty
+  manual
+  delivery_act
+  return_act
+  maintenance_report
+  secure_erase_certificate
+  certificate
+  other
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  SIGN
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODELOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Location ─────────────────────────────────────────────────────────────────
+// Catálogo plano de sedes operativas (Yucatán, Tabasco, Guadalajara…).
+// Soft delete: sí (deletedAt). Se desactiva con isActive=false antes de borrar.
+model Location {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  users                User[]
+  assets               Asset[]
+  assignmentDeliveries AssetAssignment[] @relation("DeliveryLocation")
+
+  @@index([isActive])
+  @@map("locations")
+}
+
+// ── User ─────────────────────────────────────────────────────────────────────
+// Tabla unificada: credenciales + datos del colaborador. Sin tabla separada
+// de empleados. firstName+lastName separados para actas y reportes formales.
+// Soft delete: sí (deletedAt).
+model User {
+  id                  String    @id @default(uuid())
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  role                Role
+  position            String?
+  phone               String?
+  modality            Modality?
+  locationId          String?   @map("location_id")
+  isActive            Boolean   @default(true) @map("is_active")
+  mustChangePassword  Boolean   @default(false) @map("must_change_password")
+  lastLoginAt         DateTime? @map("last_login_at")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  location             Location?             @relation(fields: [locationId], references: [id])
+  assignmentsReceived  AssetAssignment[]     @relation("AssignedToUser")
+  assignmentsCreated   AssetAssignment[]     @relation("AssignedByUser")
+  assignmentsReturned  AssetAssignment[]     @relation("ReturnedByUser")
+  incidentsReported    Incident[]            @relation("ReportedBy")
+  incidentsResolved    Incident[]            @relation("ResolvedBy")
+  assetsCreated        Asset[]               @relation("AssetCreatedBy")
+  assetsUpdated        Asset[]               @relation("AssetUpdatedBy")
+  assetsDeleted        Asset[]               @relation("AssetDeletedBy")
+  expensesCreated      AssetExpense[]        @relation("ExpenseCreatedBy")
+  maintenanceCreated   MaintenanceOrder[]    @relation("MaintenanceCreatedBy")
+  maintenanceAssigned  MaintenanceOrder[]    @relation("MaintenanceAssignedTo")
+  schedulesCreated     MaintenanceSchedule[] @relation("ScheduleCreatedBy")
+  schedulesAssigned    MaintenanceSchedule[] @relation("ScheduleAssignedTo")
+  documentsUploaded    Document[]
+
+  @@index([role])
+  @@index([locationId])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ── Asset ────────────────────────────────────────────────────────────────────
+// Tabla central. serialNumber es NOT NULL por BR-INV-02 (innegociable).
+// biosPassword y devicePassword se almacenan cifrados (AES-256-GCM en app).
+// Soft delete: sí (deletedAt + deletedBy). BR-INV-08: nunca se borra físicamente.
+model Asset {
+  id                 String         @id @default(uuid())
+  internalCode       String         @unique @map("internal_code")
+  name               String
+  assetType          AssetType      @map("asset_type")
+  serialNumber       String         @unique @map("serial_number")
+  brand              String?
+  model              String?
+  status             AssetStatus    @default(registered)
+  condition          AssetCondition
+  purchaseDate       DateTime?      @map("purchase_date")
+  purchasePrice      Decimal?       @map("purchase_price")
+  supplierName       String?        @map("supplier_name")
+  invoiceNumber      String?        @map("invoice_number")
+  warrantyExpiryDate DateTime?      @map("warranty_expiry_date")
+  usefulLifeYears    Int?           @map("useful_life_years")
+  biosPassword       String?        @map("bios_password")
+  devicePassword     String?        @map("device_password")
+  locationId         String?        @map("location_id")
+  notes              String?
+  specs              Json?
+  qrCode             String?        @unique @map("qr_code")
+  imagePath          String?        @map("image_path")
+  createdBy          String         @map("created_by")
+  updatedBy          String?        @map("updated_by")
+  deletedBy          String?        @map("deleted_by")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  deletedAt          DateTime?      @map("deleted_at")
+
+  location             Location?             @relation(fields: [locationId], references: [id])
+  createdByUser        User                  @relation("AssetCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser        User?                 @relation("AssetUpdatedBy", fields: [updatedBy], references: [id])
+  deletedByUser        User?                 @relation("AssetDeletedBy", fields: [deletedBy], references: [id])
+  assignments          AssetAssignment[]
+  expenses             AssetExpense[]
+  incidents            Incident[]
+  maintenanceOrders    MaintenanceOrder[]
+  maintenanceSchedules MaintenanceSchedule[]
+
+  @@index([assetType])
+  @@index([status])
+  @@index([locationId])
+  @@index([warrantyExpiryDate])
+  @@index([deletedAt])
+  @@map("assets")
+}
+
+// ── AssetAssignment ───────────────────────────────────────────────────────────
+// Historial de asignaciones. returnedAt IS NULL = asignación activa.
+// La unicidad de asignación activa se garantiza con índice parcial SQL raw
+// (ver nota al inicio del archivo). Sin soft delete: registro histórico inmutable.
+// deliveryDocumentId y returnDocumentId son referencias a Document.id
+// gestionadas por la aplicación (patrón polimórfico de Document).
+model AssetAssignment {
+  id                    String          @id @default(uuid())
+  assetId               String          @map("asset_id")
+  userId                String          @map("user_id")
+  assignedAt            DateTime        @map("assigned_at")
+  assignedBy            String          @map("assigned_by")
+  returnedAt            DateTime?       @map("returned_at")
+  returnedBy            String?         @map("returned_by")
+  conditionAtAssignment AssetCondition  @map("condition_at_assignment")
+  conditionAtReturn     AssetCondition? @map("condition_at_return")
+  deliveryLocationId    String?         @map("delivery_location_id")
+  accessories           Json?
+  notes                 String?
+  signedAt              DateTime?       @map("signed_at")
+  signaturePath         String?         @map("signature_path")
+  signatureIp           String?         @map("signature_ip")
+  deliveryDocumentId    String?         @map("delivery_document_id")
+  returnDocumentId      String?         @map("return_document_id")
+  createdAt             DateTime        @default(now()) @map("created_at")
+
+  asset            Asset     @relation(fields: [assetId], references: [id])
+  user             User      @relation("AssignedToUser", fields: [userId], references: [id])
+  assignedByUser   User      @relation("AssignedByUser", fields: [assignedBy], references: [id])
+  returnedByUser   User?     @relation("ReturnedByUser", fields: [returnedBy], references: [id])
+  deliveryLocation Location? @relation("DeliveryLocation", fields: [deliveryLocationId], references: [id])
+
+  @@index([assetId])
+  @@index([userId])
+  @@index([returnedAt])
+  @@map("asset_assignments")
+}
+
+// ── AssetExpense ─────────────────────────────────────────────────────────────
+// Gastos adicionales por activo (accesorios, refacciones, componentes).
+// Costo total de propiedad = assets.purchase_price + SUM(asset_expenses.cost).
+// Sin soft delete: registro financiero histórico inmutable.
+model AssetExpense {
+  id            String   @id @default(uuid())
+  assetId       String   @map("asset_id")
+  name          String
+  cost          Decimal
+  purchaseDate  DateTime @map("purchase_date")
+  invoiceNumber String?  @map("invoice_number")
+  supplierName  String?  @map("supplier_name")
+  notes         String?
+  createdBy     String   @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  asset         Asset @relation(fields: [assetId], references: [id])
+  createdByUser User  @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([assetId])
+  @@index([purchaseDate])
+  @@map("asset_expenses")
+}
+
+// ── Incident ─────────────────────────────────────────────────────────────────
+// Fallas reportadas por usuario_final (sobre sus propios equipos) o admin_ti.
+// Sin soft delete: registro histórico inmutable.
+// Relación bidireccional con MaintenanceOrder — ver nota en P-04 del DISEÑO.
+model Incident {
+  id                 String         @id @default(uuid())
+  incidentNumber     String         @unique @map("incident_number")
+  assetId            String         @map("asset_id")
+  reportedBy         String         @map("reported_by")
+  title              String
+  description        String
+  status             IncidentStatus @default(open)
+  priority           Priority       @default(medium)
+  maintenanceOrderId String?        @map("maintenance_order_id")
+  resolution         String?
+  resolvedAt         DateTime?      @map("resolved_at")
+  resolvedBy         String?        @map("resolved_by")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  asset            Asset              @relation(fields: [assetId], references: [id])
+  reportedByUser   User               @relation("ReportedBy", fields: [reportedBy], references: [id])
+  resolvedByUser   User?              @relation("ResolvedBy", fields: [resolvedBy], references: [id])
+  // FK: esta incidencia fue atendida por esta OT
+  maintenanceOrder MaintenanceOrder?  @relation("IncidentHandledByOT", fields: [maintenanceOrderId], references: [id])
+  // Back-ref: OTs que se originaron a partir de esta incidencia
+  originatedOrders MaintenanceOrder[] @relation("OTTriggeredByIncident")
+
+  @@index([assetId])
+  @@index([reportedBy])
+  @@index([status])
+  @@index([createdAt])
+  @@map("incidents")
+}
+
+// ── MaintenanceOrder ──────────────────────────────────────────────────────────
+// Órdenes de trabajo de mantenimiento (preventivo, correctivo, garantía).
+// Sin soft delete: OT cancelada tiene status=cancelled; nunca se borra.
+// Relación bidireccional con Incident — ver nota en P-04 del DISEÑO.
+model MaintenanceOrder {
+  id              String             @id @default(uuid())
+  orderNumber     String             @unique @map("order_number")
+  assetId         String             @map("asset_id")
+  type            MaintenanceType
+  status          MaintenanceStatus  @default(pending)
+  priority        Priority           @default(medium)
+  title           String
+  description     String?
+  incidentId      String?            @map("incident_id")
+  supplierName    String?            @map("supplier_name")
+  supplierTicket  String?            @map("supplier_ticket")
+  scheduledDate   DateTime?          @map("scheduled_date")
+  startedAt       DateTime?          @map("started_at")
+  completedAt     DateTime?          @map("completed_at")
+  resolution      String?
+  result          MaintenanceResult?
+  cost            Decimal?
+  isUnderWarranty Boolean            @default(false) @map("is_under_warranty")
+  assignedTo      String?            @map("assigned_to")
+  createdBy       String             @map("created_by")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  asset           Asset      @relation(fields: [assetId], references: [id])
+  // FK: esta OT fue originada por esta incidencia específica
+  incident        Incident?  @relation("OTTriggeredByIncident", fields: [incidentId], references: [id])
+  // Back-ref: incidencias que fueron atendidas por esta OT
+  linkedIncidents Incident[] @relation("IncidentHandledByOT")
+  assignedToUser  User?      @relation("MaintenanceAssignedTo", fields: [assignedTo], references: [id])
+  createdByUser   User       @relation("MaintenanceCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([assetId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("maintenance_orders")
+}
+
+// ── MaintenanceSchedule ───────────────────────────────────────────────────────
+// Programación de mantenimiento preventivo por activo.
+// Sin soft delete: se desactiva con isActive=false. Historial vía MaintenanceOrder.
+model MaintenanceSchedule {
+  id             String        @id @default(uuid())
+  assetId        String        @map("asset_id")
+  frequencyType  FrequencyType @map("frequency_type")
+  description    String
+  assignedTo     String?       @map("assigned_to")
+  lastExecutedAt DateTime?     @map("last_executed_at")
+  nextDueDate    DateTime?     @map("next_due_date")
+  isActive       Boolean       @default(true) @map("is_active")
+  createdBy      String        @map("created_by")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  asset          Asset @relation(fields: [assetId], references: [id])
+  assignedToUser User? @relation("ScheduleAssignedTo", fields: [assignedTo], references: [id])
+  createdByUser  User  @relation("ScheduleCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([assetId])
+  @@index([nextDueDate])
+  @@index([isActive])
+  @@map("maintenance_schedules")
+}
+
+// ── Document ──────────────────────────────────────────────────────────────────
+// Metadatos de archivos adjuntos. Patrón polimórfico: entityType + entityId
+// vinculan el documento a cualquier entidad sin FK formal (consultas por app).
+// Sin soft delete (BR-DOC-01): se marca isActive=false, nunca se borra.
+// Los archivos físicos se almacenan en almacenamiento externo (Railway Volumes).
+model Document {
+  id           String       @id @default(uuid())
+  type         DocumentType
+  name         String
+  filePath     String       @map("file_path")
+  fileName     String       @map("file_name")
+  fileSize     Int          @map("file_size")
+  mimeType     String       @map("mime_type")
+  entityType   String       @map("entity_type")
+  entityId     String       @map("entity_id")
+  description  String?
+  documentDate DateTime?    @map("document_date")
+  uploadedBy   String       @map("uploaded_by")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([isActive])
+  @@map("documents")
+}
+
+// ── AuditLog ──────────────────────────────────────────────────────────────────
+// Tabla de solo inserción. Absolutamente inmutable (BR-AUD-01).
+// userEmail y userRole desnormalizados para que el log sea válido si el usuario
+// es eliminado. Sin @relation a User (intencional — autonomía del registro).
+model AuditLog {
+  id        String      @id @default(uuid())
+  entity    String
+  entityId  String      @map("entity_id")
+  action    AuditAction
+  oldValues Json?       @map("old_values")
+  newValues Json?       @map("new_values")
+  userId    String?     @map("user_id")
+  userEmail String?     @map("user_email")
+  userRole  String?     @map("user_role")
+  ipAddress String?     @map("ip_address")
+  userAgent String?     @map("user_agent")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
