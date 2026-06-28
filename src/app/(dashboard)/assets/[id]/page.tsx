@@ -55,6 +55,33 @@ const PRIORITY_VARIANTS: Record<string, 'default' | 'secondary' | 'outline' | 'd
   critical: 'destructive',
 }
 
+const MAINTENANCE_TYPE_LABELS: Record<string, string> = {
+  preventive: 'Preventivo',
+  corrective: 'Correctivo',
+  warranty_repair: 'Garantía',
+}
+
+const MAINTENANCE_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendiente',
+  in_progress: 'En proceso',
+  waiting_parts: 'Esperando piezas',
+  waiting_supplier: 'Esperando proveedor',
+  completed: 'Completado',
+  cancelled: 'Cancelado',
+}
+
+const MAINTENANCE_STATUS_VARIANTS: Record<
+  string,
+  'default' | 'secondary' | 'outline' | 'destructive'
+> = {
+  pending: 'outline',
+  in_progress: 'default',
+  waiting_parts: 'secondary',
+  waiting_supplier: 'secondary',
+  completed: 'secondary',
+  cancelled: 'destructive',
+}
+
 const cardStyle = {
   background: 'white',
   borderRadius: '12px',
@@ -114,6 +141,13 @@ export default async function AssetDetailPage({ params }: Props) {
   const totalExpenses = asset.expenses.reduce((sum, e) => sum + Number(e.cost), 0)
   const openIncidents = asset.incidents.filter(
     (inc) => inc.status === 'open' || inc.status === 'in_review' || inc.status === 'in_progress',
+  ).length
+  const activeMaintenanceOrders = asset.maintenanceOrders.filter(
+    (m) =>
+      m.status === 'pending' ||
+      m.status === 'in_progress' ||
+      m.status === 'waiting_parts' ||
+      m.status === 'waiting_supplier',
   ).length
 
   return (
@@ -638,6 +672,155 @@ export default async function AssetDetailPage({ params }: Props) {
                       }}
                     >
                       {e.notes ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Mantenimiento del activo */}
+      <div style={cardStyle}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            marginBottom: '14px',
+          }}
+        >
+          <div>
+            <p style={{ ...sectionTitle, marginBottom: '4px' }}>
+              Mantenimiento ({asset.maintenanceOrders.length})
+            </p>
+            {asset.maintenanceOrders.length > 0 && (
+              <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>
+                {activeMaintenanceOrders === 0
+                  ? 'Sin órdenes activas'
+                  : `${activeMaintenanceOrders} orden${activeMaintenanceOrders > 1 ? 'es' : ''} activa${activeMaintenanceOrders > 1 ? 's' : ''}`}
+              </p>
+            )}
+          </div>
+          {!asset.deletedAt && (
+            <Link
+              href={`/assets/${asset.id}/maintenance/new`}
+              className={buttonVariants({ size: 'sm' })}
+            >
+              + Registrar mantenimiento
+            </Link>
+          )}
+        </div>
+
+        {asset.maintenanceOrders.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+            Este activo no tiene mantenimientos registrados.
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  {[
+                    'Folio',
+                    'Fecha',
+                    'Título',
+                    'Tipo',
+                    'Estado',
+                    'Costo (MXN)',
+                    'F. Programada',
+                    'F. Completado',
+                    'Creado por',
+                    'Notas',
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: '8px 10px',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#475569',
+                        whiteSpace: 'nowrap',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {asset.maintenanceOrders.map((m, i) => (
+                  <tr
+                    key={m.id}
+                    style={{
+                      borderBottom:
+                        i < asset.maintenanceOrders.length - 1 ? '1px solid #f1f5f9' : undefined,
+                      opacity: m.status === 'cancelled' ? 0.6 : 1,
+                    }}
+                  >
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          color: '#475569',
+                          background: '#f1f5f9',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {m.orderNumber}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(m.createdAt)}
+                    </td>
+                    <td style={{ padding: '8px 10px', maxWidth: '180px' }}>
+                      <span style={{ fontWeight: '500', color: '#0f172a' }}>{m.title}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {MAINTENANCE_TYPE_LABELS[m.type] ?? m.type}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <Badge variant={MAINTENANCE_STATUS_VARIANTS[m.status] ?? 'outline'}>
+                        {MAINTENANCE_STATUS_LABELS[m.status] ?? m.status}
+                      </Badge>
+                    </td>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        whiteSpace: 'nowrap',
+                        fontWeight: '500',
+                        color: m.cost ? '#0f172a' : '#94a3b8',
+                      }}
+                    >
+                      {m.cost
+                        ? `$${Number(m.cost).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(m.scheduledDate)}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(m.completedAt)}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {m.createdByUser.firstName} {m.createdByUser.lastName}
+                    </td>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        color: '#64748b',
+                        maxWidth: '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={m.description ?? undefined}
+                    >
+                      {m.description ?? '—'}
                     </td>
                   </tr>
                 ))}
