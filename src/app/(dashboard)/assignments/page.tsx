@@ -178,18 +178,22 @@ export default async function AssignmentsPage() {
                         )}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                        {isActive && (
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                           <Link
-                            href={`/assignments/${a.id}/return`}
-                            style={{
-                              fontSize: '13px',
-                              color: '#ef4444',
-                              textDecoration: 'none',
-                            }}
+                            href={`/assignments/${a.id}/receipt`}
+                            style={{ fontSize: '13px', color: '#3b82f6', textDecoration: 'none' }}
                           >
-                            Devolver
+                            Responsiva
                           </Link>
-                        )}
+                          {isActive && (
+                            <Link
+                              href={`/assignments/${a.id}/return`}
+                              style={{ fontSize: '13px', color: '#ef4444', textDecoration: 'none' }}
+                            >
+                              Devolver
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

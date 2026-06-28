@@ -81,3 +81,57 @@ export async function getDeliveryLocations() {
     orderBy: { name: 'asc' },
   })
 }
+
+const assignmentReceiptSelect = {
+  id: true,
+  assignedAt: true,
+  deliverySignedAt: true,
+  deliverySignedByName: true,
+  deliverySignatureData: true,
+  notes: true,
+  accessories: true,
+  asset: {
+    select: {
+      id: true,
+      internalCode: true,
+      name: true,
+      serialNumber: true,
+      brand: true,
+      model: true,
+      partNumber: true,
+      status: true,
+      assetType: { select: { name: true } },
+      location: { select: { name: true } },
+    },
+  },
+  user: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      position: true,
+      role: true,
+    },
+  },
+  assignedByUser: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  },
+  deliveryLocation: { select: { name: true } },
+} satisfies Prisma.AssetAssignmentSelect
+
+export type AssignmentReceipt = Prisma.AssetAssignmentGetPayload<{
+  select: typeof assignmentReceiptSelect
+}>
+
+export async function getAssignmentReceiptById(
+  assignmentId: string,
+): Promise<AssignmentReceipt | null> {
+  return prisma.assetAssignment.findUnique({
+    where: { id: assignmentId },
+    select: assignmentReceiptSelect,
+  })
+}

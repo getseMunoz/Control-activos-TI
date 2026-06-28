@@ -323,7 +323,13 @@ export default async function AssetDetailPage({ params }: Props) {
                     <span style={valueStyle}>{value ?? '—'}</span>
                   </div>
                 ))}
-                <div style={{ marginTop: '12px' }}>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Link
+                    href={`/assignments/${activeAssignment.id}/receipt`}
+                    className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  >
+                    Ver responsiva
+                  </Link>
                   <Link
                     href={`/assignments/${activeAssignment.id}/return`}
                     className={buttonVariants({ variant: 'outline', size: 'sm' })}
@@ -369,6 +375,7 @@ export default async function AssetDetailPage({ params }: Props) {
                     'Devuelto por',
                     'Estado',
                     'Firma',
+                    '',
                   ].map((h) => (
                     <th
                       key={h}
@@ -435,6 +442,14 @@ export default async function AssetDetailPage({ params }: Props) {
                         ) : (
                           <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
                         )}
+                      </td>
+                      <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                        <Link
+                          href={`/assignments/${a.id}/receipt`}
+                          style={{ fontSize: '12px', color: '#3b82f6' }}
+                        >
+                          Responsiva
+                        </Link>
                       </td>
                     </tr>
                   )
