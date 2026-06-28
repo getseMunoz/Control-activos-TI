@@ -78,6 +78,7 @@ export default async function AssetDetailPage({ params }: Props) {
 
   const activeAssignment = asset.assignments.find((a) => a.returnedAt === null) ?? null
   const canAssign = asset.status === 'in_storage' && asset.deletedAt === null
+  const totalExpenses = asset.expenses.reduce((sum, e) => sum + Number(e.cost), 0)
 
   return (
     <div style={{ padding: '32px', maxWidth: '960px' }}>
@@ -340,6 +341,130 @@ export default async function AssetDetailPage({ params }: Props) {
                     </tr>
                   )
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Gastos del activo */}
+      <div style={cardStyle}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            marginBottom: '14px',
+          }}
+        >
+          <div>
+            <p style={{ ...sectionTitle, marginBottom: '4px' }}>
+              Gastos del activo ({asset.expenses.length})
+            </p>
+            {asset.expenses.length > 0 && (
+              <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>
+                Total acumulado:{' '}
+                <strong>
+                  $
+                  {totalExpenses.toLocaleString('es-MX', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  MXN
+                </strong>
+              </p>
+            )}
+          </div>
+          {!asset.deletedAt && (
+            <Link
+              href={`/assets/${asset.id}/expenses/new`}
+              className={buttonVariants({ size: 'sm' })}
+            >
+              + Registrar gasto
+            </Link>
+          )}
+        </div>
+
+        {asset.expenses.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+            Este activo no tiene gastos registrados.
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  {[
+                    'Fecha',
+                    'Descripción',
+                    'Monto (MXN)',
+                    'Proveedor',
+                    'Factura',
+                    'Registrado por',
+                    'Notas',
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: '8px 10px',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#475569',
+                        whiteSpace: 'nowrap',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {asset.expenses.map((e, i) => (
+                  <tr
+                    key={e.id}
+                    style={{
+                      borderBottom: i < asset.expenses.length - 1 ? '1px solid #f1f5f9' : undefined,
+                    }}
+                  >
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(e.purchaseDate)}
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>{e.name}</td>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        whiteSpace: 'nowrap',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                      }}
+                    >
+                      $
+                      {Number(e.cost).toLocaleString('es-MX', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {e.supplierName ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {e.invoiceNumber ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {e.createdByUser.firstName} {e.createdByUser.lastName}
+                    </td>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        color: '#64748b',
+                        maxWidth: '200px',
+                      }}
+                    >
+                      {e.notes ?? '—'}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
