@@ -101,6 +101,22 @@ const assetFullDetailSelect = {
     },
     orderBy: [{ purchaseDate: 'desc' as const }, { createdAt: 'desc' as const }],
   },
+  incidents: {
+    select: {
+      id: true,
+      incidentNumber: true,
+      title: true,
+      description: true,
+      status: true,
+      priority: true,
+      resolution: true,
+      resolvedAt: true,
+      createdAt: true,
+      reportedByUser: { select: { firstName: true, lastName: true } },
+      resolvedByUser: { select: { firstName: true, lastName: true } },
+    },
+    orderBy: [{ createdAt: 'desc' as const }],
+  },
 } satisfies Prisma.AssetSelect
 
 export type AssetFullDetail = Prisma.AssetGetPayload<{ select: typeof assetFullDetailSelect }>
@@ -116,6 +132,20 @@ export async function getAssetForExpenseById(id: string) {
   return prisma.asset.findUnique({
     where: { id },
     select: { id: true, internalCode: true, name: true, serialNumber: true, deletedAt: true },
+  })
+}
+
+export async function getAssetForIncidentById(id: string) {
+  return prisma.asset.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      internalCode: true,
+      name: true,
+      serialNumber: true,
+      status: true,
+      deletedAt: true,
+    },
   })
 }
 

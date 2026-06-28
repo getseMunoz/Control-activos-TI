@@ -22,6 +22,39 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'outline' | 'des
   lost: 'destructive',
 }
 
+const INCIDENT_STATUS_LABELS: Record<string, string> = {
+  open: 'Abierta',
+  in_review: 'En revisión',
+  in_progress: 'En proceso',
+  resolved: 'Resuelta',
+  closed: 'Cerrada',
+}
+
+const INCIDENT_STATUS_VARIANTS: Record<
+  string,
+  'default' | 'secondary' | 'outline' | 'destructive'
+> = {
+  open: 'default',
+  in_review: 'secondary',
+  in_progress: 'outline',
+  resolved: 'secondary',
+  closed: 'outline',
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  low: 'Baja',
+  medium: 'Media',
+  high: 'Alta',
+  critical: 'Crítica',
+}
+
+const PRIORITY_VARIANTS: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  low: 'secondary',
+  medium: 'outline',
+  high: 'default',
+  critical: 'destructive',
+}
+
 const cardStyle = {
   background: 'white',
   borderRadius: '12px',
@@ -79,6 +112,9 @@ export default async function AssetDetailPage({ params }: Props) {
   const activeAssignment = asset.assignments.find((a) => a.returnedAt === null) ?? null
   const canAssign = asset.status === 'in_storage' && asset.deletedAt === null
   const totalExpenses = asset.expenses.reduce((sum, e) => sum + Number(e.cost), 0)
+  const openIncidents = asset.incidents.filter(
+    (inc) => inc.status === 'open' || inc.status === 'in_review' || inc.status === 'in_progress',
+  ).length
 
   return (
     <div style={{ padding: '32px', maxWidth: '960px' }}>
@@ -341,6 +377,146 @@ export default async function AssetDetailPage({ params }: Props) {
                     </tr>
                   )
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Incidencias del activo */}
+      <div style={cardStyle}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            marginBottom: '14px',
+          }}
+        >
+          <div>
+            <p style={{ ...sectionTitle, marginBottom: '4px' }}>
+              Incidencias ({asset.incidents.length})
+            </p>
+            {asset.incidents.length > 0 && (
+              <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>
+                {openIncidents === 0
+                  ? 'Sin incidencias abiertas'
+                  : `${openIncidents} incidencia${openIncidents > 1 ? 's' : ''} abierta${openIncidents > 1 ? 's' : ''}`}
+              </p>
+            )}
+          </div>
+          {!asset.deletedAt && (
+            <Link
+              href={`/assets/${asset.id}/incidents/new`}
+              className={buttonVariants({ size: 'sm' })}
+            >
+              + Registrar incidencia
+            </Link>
+          )}
+        </div>
+
+        {asset.incidents.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+            Este activo no tiene incidencias registradas.
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  {[
+                    'Folio',
+                    'Fecha',
+                    'Título',
+                    'Prioridad',
+                    'Estado',
+                    'Reportado por',
+                    'Resuelto por',
+                    'F. Resolución',
+                    'Descripción',
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: '8px 10px',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#475569',
+                        whiteSpace: 'nowrap',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {asset.incidents.map((inc, i) => (
+                  <tr
+                    key={inc.id}
+                    style={{
+                      borderBottom:
+                        i < asset.incidents.length - 1 ? '1px solid #f1f5f9' : undefined,
+                      opacity: inc.status === 'closed' ? 0.7 : 1,
+                    }}
+                  >
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          color: '#475569',
+                          background: '#f1f5f9',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {inc.incidentNumber}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(inc.createdAt)}
+                    </td>
+                    <td style={{ padding: '8px 10px', maxWidth: '200px' }}>
+                      <span style={{ fontWeight: '500', color: '#0f172a' }}>{inc.title}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <Badge variant={PRIORITY_VARIANTS[inc.priority] ?? 'outline'}>
+                        {PRIORITY_LABELS[inc.priority] ?? inc.priority}
+                      </Badge>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <Badge variant={INCIDENT_STATUS_VARIANTS[inc.status] ?? 'outline'}>
+                        {INCIDENT_STATUS_LABELS[inc.status] ?? inc.status}
+                      </Badge>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {inc.reportedByUser.firstName} {inc.reportedByUser.lastName}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {inc.resolvedByUser
+                        ? `${inc.resolvedByUser.firstName} ${inc.resolvedByUser.lastName}`
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {inc.resolvedAt ? fmt(inc.resolvedAt) : '—'}
+                    </td>
+                    <td
+                      style={{
+                        padding: '8px 10px',
+                        color: '#64748b',
+                        maxWidth: '220px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={inc.description}
+                    >
+                      {inc.description}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
