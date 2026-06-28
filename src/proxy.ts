@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 const PUBLIC_ROUTES = ['/login']
 
 // Prefijos de rutas exclusivas de admin_ti
-const ADMIN_ONLY_PREFIXES = ['/audit', '/admin', '/assets', '/reports', '/alerts']
+const ADMIN_ONLY_PREFIXES = ['/audit', '/admin', '/assets', '/assignments', '/reports', '/alerts']
 
 export default auth((req) => {
   const { pathname } = req.nextUrl

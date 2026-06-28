@@ -1,0 +1,194 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { requireAdminTI } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import type { ActionResult } from '@/types'
+
+const createSchema = z.object({
+  assetId: z.string().uuid('Selecciona un activo válido'),
+  userId: z.string().uuid('Selecciona un usuario válido'),
+  assignedAt: z.string().min(1, 'La fecha de asignación es obligatoria'),
+  deliveryLocationId: z.string().uuid('Ubicación de entrega inválida').optional(),
+  accessories: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+const returnSchema = z.object({
+  id: z.string().uuid('ID de asignación inválido'),
+  returnedAt: z.string().min(1, 'La fecha de devolución es obligatoria'),
+  notes: z.string().optional(),
+})
+
+function parseOptionalString(formData: FormData, key: string): string | undefined {
+  const val = formData.get(key)?.toString().trim()
+  return val || undefined
+}
+
+export async function createAssignmentAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const admin = await requireAdminTI()
+
+  const raw = {
+    assetId: formData.get('assetId')?.toString() ?? '',
+    userId: formData.get('userId')?.toString() ?? '',
+    assignedAt: formData.get('assignedAt')?.toString() ?? '',
+    deliveryLocationId: parseOptionalString(formData, 'deliveryLocationId'),
+    accessories: parseOptionalString(formData, 'accessories'),
+    notes: parseOptionalString(formData, 'notes'),
+  }
+
+  const result = createSchema.safeParse(raw)
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message }
+  }
+
+  const data = result.data
+
+  // Validar activo: debe existir, no estar archivado, y estar en in_storage
+  const asset = await prisma.asset.findUnique({
+    where: { id: data.assetId },
+    select: { id: true, status: true, deletedAt: true },
+  })
+  if (!asset || asset.deletedAt !== null) {
+    return { success: false, error: 'El activo no existe o está archivado.' }
+  }
+  if (asset.status !== 'in_storage') {
+    return {
+      success: false,
+      error: 'El activo debe estar en estado "En almacén" para ser asignado.',
+    }
+  }
+
+  // RN-ASGN-01: verificar que no haya asignación activa
+  const existingActive = await prisma.assetAssignment.findFirst({
+    where: { assetId: data.assetId, returnedAt: null },
+  })
+  if (existingActive) {
+    return { success: false, error: 'Este activo ya tiene una asignación activa.' }
+  }
+
+  // Validar usuario: activo y no eliminado
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
+    select: { id: true, isActive: true, deletedAt: true },
+  })
+  if (!user || !user.isActive || user.deletedAt !== null) {
+    return { success: false, error: 'El usuario no existe o no está activo.' }
+  }
+
+  // Validar ubicación de entrega si se proporcionó
+  if (data.deliveryLocationId) {
+    const location = await prisma.location.findFirst({
+      where: { id: data.deliveryLocationId, isActive: true, deletedAt: null },
+    })
+    if (!location) {
+      return { success: false, error: 'La ubicación de entrega seleccionada no está disponible.' }
+    }
+  }
+
+  const assignedAt = new Date(data.assignedAt)
+  if (isNaN(assignedAt.getTime())) {
+    return { success: false, error: 'La fecha de asignación no es válida.' }
+  }
+  const accessories = data.accessories ? { text: data.accessories } : Prisma.JsonNull
+
+  // RN-ASGN-04: transacción — crear asignación y cambiar estado del activo a 'assigned'
+  try {
+    await prisma.$transaction([
+      prisma.assetAssignment.create({
+        data: {
+          assetId: data.assetId,
+          userId: data.userId,
+          assignedAt,
+          assignedBy: admin.id,
+          deliveryLocationId: data.deliveryLocationId ?? null,
+          accessories,
+          notes: data.notes ?? null,
+        },
+      }),
+      prisma.asset.update({
+        where: { id: data.assetId },
+        data: { status: 'assigned', updatedBy: admin.id },
+      }),
+    ])
+  } catch {
+    return { success: false, error: 'Error al crear la asignación. Intenta de nuevo.' }
+  }
+
+  revalidatePath('/assignments')
+  revalidatePath('/assets')
+  redirect('/assignments')
+}
+
+export async function returnAssignmentAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const admin = await requireAdminTI()
+
+  const raw = {
+    id: formData.get('id')?.toString() ?? '',
+    returnedAt: formData.get('returnedAt')?.toString() ?? '',
+    notes: parseOptionalString(formData, 'notes'),
+  }
+
+  const result = returnSchema.safeParse(raw)
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message }
+  }
+
+  const data = result.data
+
+  // Verificar que la asignación exista y esté activa
+  const assignment = await prisma.assetAssignment.findUnique({
+    where: { id: data.id },
+    select: { id: true, assetId: true, assignedAt: true, returnedAt: true },
+  })
+  if (!assignment) {
+    return { success: false, error: 'Asignación no encontrada.' }
+  }
+  if (assignment.returnedAt !== null) {
+    return { success: false, error: 'Esta asignación ya fue devuelta anteriormente.' }
+  }
+
+  const returnedAt = new Date(data.returnedAt)
+  if (isNaN(returnedAt.getTime())) {
+    return { success: false, error: 'La fecha de devolución no es válida.' }
+  }
+  if (returnedAt < assignment.assignedAt) {
+    return {
+      success: false,
+      error: 'La fecha de devolución no puede ser anterior a la fecha de asignación.',
+    }
+  }
+
+  // RN-ASGN-05: transacción — registrar devolución y cambiar estado del activo a 'in_storage'
+  try {
+    await prisma.$transaction([
+      prisma.assetAssignment.update({
+        where: { id: data.id },
+        data: {
+          returnedAt,
+          returnedBy: admin.id,
+          notes: data.notes ?? null,
+        },
+      }),
+      prisma.asset.update({
+        where: { id: assignment.assetId },
+        data: { status: 'in_storage', updatedBy: admin.id },
+      }),
+    ])
+  } catch {
+    return { success: false, error: 'Error al registrar la devolución. Intenta de nuevo.' }
+  }
+
+  revalidatePath('/assignments')
+  revalidatePath('/assets')
+  redirect('/assignments')
+}
