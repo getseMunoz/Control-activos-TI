@@ -14,6 +14,27 @@ const assetListSelect = {
   deletedAt: true,
   assetType: { select: { name: true } },
   location: { select: { name: true } },
+  assignments: {
+    where: { returnedAt: null },
+    take: 1,
+    select: {
+      assignedAt: true,
+      user: { select: { firstName: true, lastName: true, email: true } },
+    },
+  },
+  incidents: {
+    where: { status: { in: ['open', 'in_review', 'in_progress'] as const } },
+    select: { id: true },
+  },
+  maintenanceOrders: {
+    where: {
+      status: { in: ['pending', 'in_progress', 'waiting_parts', 'waiting_supplier'] as const },
+    },
+    select: { id: true },
+  },
+  expenses: {
+    select: { cost: true },
+  },
 } satisfies Prisma.AssetSelect
 
 export type AssetListItem = Prisma.AssetGetPayload<{ select: typeof assetListSelect }>
