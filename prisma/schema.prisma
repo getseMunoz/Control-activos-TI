@@ -29,33 +29,16 @@ enum Role {
 enum Modality {
   presencial
   remoto
-}
-
-enum AssetType {
-  desktop
-  laptop
-  raspberry_pi
-  mobile_phone
-  radio
-  printer
+  hibrido
 }
 
 enum AssetStatus {
-  registered     // Registrado — pendiente de ubicar o asignar
-  in_storage     // En almacén
+  in_storage     // En almacén — estado inicial al registrar un activo
   assigned       // Asignado a un usuario
   in_maintenance // En mantenimiento
   decommissioned // Dado de baja definitivamente
   stolen         // Reportado como robado
   lost           // Reportado como perdido
-}
-
-enum AssetCondition {
-  new     // Nuevo
-  good    // Buen estado
-  fair    // Estado regular
-  poor    // Estado deficiente
-  damaged // Dañado / inservible
 }
 
 enum IncidentStatus {
@@ -148,6 +131,24 @@ model Location {
   @@map("locations")
 }
 
+// ── AssetType ─────────────────────────────────────────────────────────────────
+// Catálogo administrable de tipos de activo. Admin TI puede crear nuevos tipos
+// sin modificar código ni generar migraciones. Sin soft delete: se desactiva con
+// isActive=false cuando un tipo deja de usarse para nuevos registros.
+model AssetType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  assets Asset[]
+
+  @@index([isActive])
+  @@map("asset_types")
+}
+
 // ── User ─────────────────────────────────────────────────────────────────────
 // Tabla unificada: credenciales + datos del colaborador. Sin tabla separada
 // de empleados. firstName+lastName separados para actas y reportes formales.
@@ -196,24 +197,26 @@ model User {
 
 // ── Asset ────────────────────────────────────────────────────────────────────
 // Tabla central. serialNumber es NOT NULL por BR-INV-02 (innegociable).
-// biosPassword y devicePassword se almacenan cifrados (AES-256-GCM en app).
 // Soft delete: sí (deletedAt + deletedBy). BR-INV-08: nunca se borra físicamente.
 model Asset {
   id                 String         @id @default(uuid())
   internalCode       String         @unique @map("internal_code")
   name               String
-  assetType          AssetType      @map("asset_type")
+  assetTypeId        String         @map("asset_type_id")
   serialNumber       String         @unique @map("serial_number")
   brand              String?
   model              String?
-  status             AssetStatus    @default(registered)
-  condition          AssetCondition
+  partNumber         String?        @map("part_number")
+  status             AssetStatus    @default(in_storage)
   purchaseDate       DateTime?      @map("purchase_date")
   purchasePrice      Decimal?       @map("purchase_price")
   supplierName       String?        @map("supplier_name")
   invoiceNumber      String?        @map("invoice_number")
   warrantyExpiryDate DateTime?      @map("warranty_expiry_date")
   usefulLifeYears    Int?           @map("useful_life_years")
+  // SEGURIDAD: cifrados con AES-256-GCM antes de persistir (clave en ENCRYPTION_KEY).
+  // Acceso exclusivo de admin_ti. Nunca enviar al frontend para usuario_final.
+  // Toda consulta o modificación debe registrarse en AuditLog (acción UPDATE / EXPORT).
   biosPassword       String?        @map("bios_password")
   devicePassword     String?        @map("device_password")
   locationId         String?        @map("location_id")
@@ -228,6 +231,7 @@ model Asset {
   updatedAt          DateTime       @updatedAt @map("updated_at")
   deletedAt          DateTime?      @map("deleted_at")
 
+  assetType            AssetType             @relation(fields: [assetTypeId], references: [id])
   location             Location?             @relation(fields: [locationId], references: [id])
   createdByUser        User                  @relation("AssetCreatedBy", fields: [createdBy], references: [id])
   updatedByUser        User?                 @relation("AssetUpdatedBy", fields: [updatedBy], references: [id])
@@ -238,7 +242,7 @@ model Asset {
   maintenanceOrders    MaintenanceOrder[]
   maintenanceSchedules MaintenanceSchedule[]
 
-  @@index([assetType])
+  @@index([assetTypeId])
   @@index([status])
   @@index([locationId])
   @@index([warrantyExpiryDate])
@@ -260,8 +264,6 @@ model AssetAssignment {
   assignedBy            String          @map("assigned_by")
   returnedAt            DateTime?       @map("returned_at")
   returnedBy            String?         @map("returned_by")
-  conditionAtAssignment AssetCondition  @map("condition_at_assignment")
-  conditionAtReturn     AssetCondition? @map("condition_at_return")
   deliveryLocationId    String?         @map("delivery_location_id")
   accessories           Json?
   notes                 String?
@@ -299,7 +301,6 @@ model AssetExpense {
   notes         String?
   createdBy     String   @map("created_by")
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
 
   asset         Asset @relation(fields: [assetId], references: [id])
   createdByUser User  @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])

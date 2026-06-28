@@ -1,11 +1,10 @@
-// Layout protegido del dashboard — se implementará en la Fase 2
-// Este layout verificará la sesión y mostrará el sidebar de navegación.
-// Referencia: ARQUITECTURA.md — Sección 4, PERMISOS.md
+import { auth, signOut } from '@/lib/auth'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar — Fase 2 */}
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
       <aside
         style={{
           width: '240px',
@@ -13,20 +12,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           minHeight: '100vh',
           padding: '24px 16px',
           flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
+        {/* Marca */}
         <div
-          style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '14px', marginBottom: '24px' }}
+          style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '14px', marginBottom: '32px' }}
         >
           CIPRIJAL Activos TI
         </div>
-        <p style={{ color: '#64748b', fontSize: '12px' }}>Navegación — Fase 2</p>
+
+        {/* Espacio de navegación futuro */}
+        <div style={{ flex: 1 }} />
+
+        {/* Usuario y cierre de sesión */}
+        {session?.user && (
+          <div
+            style={{
+              borderTop: '1px solid #2d3f55',
+              paddingTop: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: '500', margin: 0 }}>
+                {session.user.name}
+              </p>
+              <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0' }}>
+                {session.user.email}
+              </p>
+            </div>
+
+            <form
+              action={async () => {
+                'use server'
+                await signOut({ redirectTo: '/login' })
+              }}
+            >
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  padding: '6px 12px',
+                  background: 'transparent',
+                  border: '1px solid #2d3f55',
+                  borderRadius: '6px',
+                  color: '#94a3b8',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
+        )}
       </aside>
 
-      {/* Contenido principal */}
-      <main className="flex-1 overflow-auto" style={{ background: '#f5f7f5' }}>
-        {children}
-      </main>
+      <main style={{ flex: 1, overflow: 'auto', background: '#f5f7f5' }}>{children}</main>
     </div>
   )
 }
