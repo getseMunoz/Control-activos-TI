@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { requireAdminTI } from '@/lib/auth'
+import { requireAdminTI, requireAuthenticatedUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { ActionResult } from '@/types'
 
@@ -89,6 +89,71 @@ export async function createIncidentAction(
 
   revalidatePath(`/assets/${data.assetId}`)
   redirect(`/assets/${data.assetId}`)
+}
+
+const userIncidentSchema = z.object({
+  assetId: z.string().uuid('ID de activo inválido'),
+  title: z.string().min(1, 'El título es obligatorio'),
+  description: z.string().min(1, 'La descripción es obligatoria'),
+  priority: z.enum(PRIORITY_VALUES, {
+    errorMap: () => ({ message: 'Selecciona una prioridad válida' }),
+  }),
+})
+
+export async function createUserIncidentAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireAuthenticatedUser()
+
+  const raw = {
+    assetId: formData.get('assetId')?.toString() ?? '',
+    title: formData.get('title')?.toString().trim() ?? '',
+    description: formData.get('description')?.toString().trim() ?? '',
+    priority: formData.get('priority')?.toString() || 'medium',
+  }
+
+  const result = userIncidentSchema.safeParse(raw)
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message }
+  }
+
+  const data = result.data
+
+  // RN-INC-01: validar que el usuario tenga asignación activa sobre el activo
+  const assignment = await prisma.assetAssignment.findFirst({
+    where: {
+      userId: user.id,
+      assetId: data.assetId,
+      returnedAt: null,
+      asset: { deletedAt: null },
+    },
+    select: { id: true },
+  })
+  if (!assignment) {
+    return {
+      success: false,
+      error: 'No tienes una asignación activa sobre este equipo.',
+    }
+  }
+
+  const incidentNumber = await generateIncidentNumber()
+
+  await prisma.incident.create({
+    data: {
+      incidentNumber,
+      assetId: data.assetId,
+      reportedBy: user.id,
+      title: data.title,
+      description: data.description,
+      status: 'open',
+      priority: data.priority,
+      resolution: null,
+    },
+  })
+
+  revalidatePath('/my-assets')
+  redirect('/my-assets')
 }
 
 const updateIncidentSchema = z.object({

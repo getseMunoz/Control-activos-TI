@@ -4,18 +4,32 @@ import { NextResponse } from 'next/server'
 // Rutas públicas — accesibles sin sesión
 const PUBLIC_ROUTES = ['/login']
 
-// Prefijos de rutas exclusivas de admin_ti
-const ADMIN_ONLY_PREFIXES = ['/audit', '/admin', '/assets', '/assignments', '/reports', '/alerts']
+// Prefijos exclusivos de admin_ti (usuario_final queda bloqueado)
+const ADMIN_ONLY_PREFIXES = [
+  '/audit',
+  '/admin',
+  '/assets',
+  '/assignments',
+  '/reports',
+  '/alerts',
+  '/dashboard',
+]
+
+// Rutas de responsiva: /assignments/<id>/receipt — accesibles a cualquier usuario autenticado.
+// La validación de propiedad ocurre dentro de la propia página.
+function isReceiptRoute(pathname: string): boolean {
+  return /^\/assignments\/[^/]+\/receipt(\/.*)?$/.test(pathname)
+}
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
 
-  // Permitir rutas públicas sin verificación
+  // Rutas públicas
   if (PUBLIC_ROUTES.includes(pathname)) {
-    // Si ya tiene sesión y va a /login, redirigir al dashboard
     if (session) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      const dest = session.user?.role === 'admin_ti' ? '/dashboard' : '/my-assets'
+      return NextResponse.redirect(new URL(dest, req.url))
     }
     return NextResponse.next()
   }
@@ -27,10 +41,11 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Verificar acceso a rutas exclusivas de admin_ti
-  const isAdminRoute = ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  if (isAdminRoute && session.user?.role !== 'admin_ti') {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+  // Verificar acceso a rutas admin-only
+  // Excepción: la responsiva es accesible a cualquier usuario autenticado
+  const adminRoute = ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  if (adminRoute && !isReceiptRoute(pathname) && session.user?.role !== 'admin_ti') {
+    return NextResponse.redirect(new URL('/my-assets', req.url))
   }
 
   return NextResponse.next()

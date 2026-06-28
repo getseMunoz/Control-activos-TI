@@ -36,12 +36,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         {/* Navegación */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-          <Link href="/dashboard" style={navLinkStyle}>
-            Dashboard
-          </Link>
-
-          {isAdmin && (
+          {isAdmin ? (
             <>
+              <Link href="/dashboard" style={navLinkStyle}>
+                Dashboard
+              </Link>
               <div
                 style={{
                   fontSize: '11px',
@@ -70,6 +69,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Asignaciones
               </Link>
             </>
+          ) : (
+            <Link href="/my-assets" style={navLinkStyle}>
+              Mis activos
+            </Link>
           )}
         </nav>
 

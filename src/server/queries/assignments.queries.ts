@@ -84,6 +84,7 @@ export async function getDeliveryLocations() {
 
 const assignmentReceiptSelect = {
   id: true,
+  userId: true,
   assignedAt: true,
   deliverySignedAt: true,
   deliverySignedByName: true,

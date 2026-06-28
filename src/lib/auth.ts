@@ -98,3 +98,13 @@ export async function requireAdminTI(): Promise<{ id: string; email: string; rol
   if (session.user.role !== 'admin_ti') throw new Error('Acceso denegado')
   return { id: session.user.id, email: session.user.email!, role: session.user.role }
 }
+
+export async function requireAuthenticatedUser(): Promise<{
+  id: string
+  email: string
+  role: Role
+}> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error('No autenticado')
+  return { id: session.user.id, email: session.user.email!, role: session.user.role }
+}

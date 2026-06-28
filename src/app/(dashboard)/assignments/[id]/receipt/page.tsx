@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { auth } from '@/lib/auth'
 import { getAssignmentReceiptById } from '@/server/queries/assignments.queries'
 import { PrintButton } from '@/components/features/assignments/PrintButton'
 
@@ -39,14 +40,20 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function AssignmentReceiptPage({ params }: Props) {
   const { id } = await params
-  const assignment = await getAssignmentReceiptById(id)
+  const [session, assignment] = await Promise.all([auth(), getAssignmentReceiptById(id)])
 
   if (!assignment) notFound()
+
+  // usuario_final solo puede ver su propia responsiva
+  if (session?.user?.role !== 'admin_ti' && assignment.userId !== session?.user?.id) {
+    notFound()
+  }
 
   const { asset, user, assignedByUser, deliveryLocation } = assignment
   const accessories = getAccessoriesText(assignment.accessories)
   const generatedAt = new Date()
   const folio = `${asset.internalCode}-${assignment.assignedAt.toISOString().slice(0, 10).replace(/-/g, '')}`
+  const backHref = session?.user?.role === 'admin_ti' ? '/assignments' : '/my-assets'
 
   return (
     <>
@@ -75,7 +82,7 @@ export default async function AssignmentReceiptPage({ params }: Props) {
         }}
       >
         <Link
-          href="/assignments"
+          href={backHref}
           style={{
             fontSize: '13px',
             color: '#475569',
