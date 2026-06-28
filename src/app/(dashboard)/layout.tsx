@@ -63,6 +63,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <Link href="/admin/asset-types" style={navLinkStyle}>
                 Tipos de activo
               </Link>
+              <Link href="/assets" style={navLinkStyle}>
+                Activos
+              </Link>
             </>
           )}
         </nav>
