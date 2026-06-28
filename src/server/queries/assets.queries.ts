@@ -51,6 +51,53 @@ export async function getAssetById(id: string): Promise<AssetDetail | null> {
   })
 }
 
+const assetFullDetailSelect = {
+  id: true,
+  internalCode: true,
+  name: true,
+  serialNumber: true,
+  brand: true,
+  model: true,
+  partNumber: true,
+  status: true,
+  purchaseDate: true,
+  purchasePrice: true,
+  supplierName: true,
+  invoiceNumber: true,
+  warrantyExpiryDate: true,
+  usefulLifeYears: true,
+  notes: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+  assetType: { select: { name: true } },
+  location: { select: { name: true } },
+  createdByUser: { select: { firstName: true, lastName: true } },
+  updatedByUser: { select: { firstName: true, lastName: true } },
+  assignments: {
+    select: {
+      id: true,
+      assignedAt: true,
+      returnedAt: true,
+      notes: true,
+      user: { select: { firstName: true, lastName: true, email: true } },
+      assignedByUser: { select: { firstName: true, lastName: true } },
+      returnedByUser: { select: { firstName: true, lastName: true } },
+      deliveryLocation: { select: { name: true } },
+    },
+    orderBy: { assignedAt: 'desc' as const },
+  },
+} satisfies Prisma.AssetSelect
+
+export type AssetFullDetail = Prisma.AssetGetPayload<{ select: typeof assetFullDetailSelect }>
+
+export async function getAssetDetailById(id: string): Promise<AssetFullDetail | null> {
+  return prisma.asset.findUnique({
+    where: { id },
+    select: assetFullDetailSelect,
+  })
+}
+
 export async function getActiveAssetTypes() {
   return prisma.assetType.findMany({
     where: { isActive: true },

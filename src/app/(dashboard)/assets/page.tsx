@@ -171,8 +171,19 @@ export default async function AssetsPage() {
                     </td>
                     <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                       <Link
+                        href={`/assets/${asset.id}`}
+                        style={{
+                          fontSize: '13px',
+                          color: '#3b82f6',
+                          textDecoration: 'none',
+                          marginRight: '12px',
+                        }}
+                      >
+                        Ver
+                      </Link>
+                      <Link
                         href={`/assets/${asset.id}/edit`}
-                        style={{ fontSize: '13px', color: '#3b82f6', textDecoration: 'none' }}
+                        style={{ fontSize: '13px', color: '#64748b', textDecoration: 'none' }}
                       >
                         Editar
                       </Link>
