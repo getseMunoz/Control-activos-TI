@@ -1,6 +1,28 @@
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
+const VALID_STATUSES = [
+  'in_storage',
+  'assigned',
+  'in_maintenance',
+  'decommissioned',
+  'stolen',
+  'lost',
+] as const
+type AssetStatusValue = (typeof VALID_STATUSES)[number]
+function isValidStatus(s: string): s is AssetStatusValue {
+  return (VALID_STATUSES as readonly string[]).includes(s)
+}
+
+export type AssetListFilters = {
+  q?: string
+  status?: string
+  assetTypeId?: string
+  locationId?: string
+  assigned?: 'assigned' | 'unassigned'
+  hasAlerts?: 'yes' | 'no'
+}
+
 const assetListSelect = {
   id: true,
   internalCode: true,
@@ -39,11 +61,101 @@ const assetListSelect = {
 
 export type AssetListItem = Prisma.AssetGetPayload<{ select: typeof assetListSelect }>
 
-export async function getAssets(): Promise<AssetListItem[]> {
+export async function getAssets(filters: AssetListFilters = {}): Promise<AssetListItem[]> {
+  const conditions: Prisma.AssetWhereInput[] = [{ deletedAt: null }]
+
+  if (filters.q?.trim()) {
+    const q = filters.q.trim()
+    conditions.push({
+      OR: [
+        { internalCode: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+        { serialNumber: { contains: q, mode: 'insensitive' } },
+        { brand: { contains: q, mode: 'insensitive' } },
+        { model: { contains: q, mode: 'insensitive' } },
+        { partNumber: { contains: q, mode: 'insensitive' } },
+        {
+          assignments: {
+            some: {
+              returnedAt: null,
+              user: {
+                OR: [
+                  { firstName: { contains: q, mode: 'insensitive' } },
+                  { lastName: { contains: q, mode: 'insensitive' } },
+                  { email: { contains: q, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    })
+  }
+
+  if (filters.status && isValidStatus(filters.status)) {
+    conditions.push({ status: filters.status })
+  }
+
+  if (filters.assetTypeId) {
+    conditions.push({ assetTypeId: filters.assetTypeId })
+  }
+
+  if (filters.locationId) {
+    conditions.push({ locationId: filters.locationId })
+  }
+
+  if (filters.assigned === 'assigned') {
+    conditions.push({ assignments: { some: { returnedAt: null } } })
+  } else if (filters.assigned === 'unassigned') {
+    conditions.push({ assignments: { none: { returnedAt: null } } })
+  }
+
+  const openIncidentStatuses = ['open', 'in_review', 'in_progress'] as const
+  const activeMaintenanceStatuses = [
+    'pending',
+    'in_progress',
+    'waiting_parts',
+    'waiting_supplier',
+  ] as const
+
+  if (filters.hasAlerts === 'yes') {
+    conditions.push({
+      OR: [
+        { incidents: { some: { status: { in: [...openIncidentStatuses] } } } },
+        { maintenanceOrders: { some: { status: { in: [...activeMaintenanceStatuses] } } } },
+      ],
+    })
+  } else if (filters.hasAlerts === 'no') {
+    conditions.push({ incidents: { none: { status: { in: [...openIncidentStatuses] } } } })
+    conditions.push({
+      maintenanceOrders: { none: { status: { in: [...activeMaintenanceStatuses] } } },
+    })
+  }
+
+  const where: Prisma.AssetWhereInput =
+    conditions.length === 1 ? conditions[0] : { AND: conditions }
+
   return prisma.asset.findMany({
     select: assetListSelect,
+    where,
     orderBy: { createdAt: 'desc' },
   })
+}
+
+export async function getAssetFilterOptions() {
+  const [assetTypes, locations] = await Promise.all([
+    prisma.assetType.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.location.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+  return { assetTypes, locations }
 }
 
 const assetDetailSelect = {
