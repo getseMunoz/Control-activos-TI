@@ -255,3 +255,65 @@ export async function reactivateUserAction(userId: string): Promise<ActionResult
   revalidatePath(`/admin/users/${userId}/edit`)
   return { success: true }
 }
+
+const resetPasswordSchema = z.object({
+  userId: z.string().uuid('ID de usuario inválido'),
+  password: passwordSchema,
+  confirmPassword: z.string().min(1, 'Confirma la nueva contraseña'),
+})
+
+export async function resetUserPasswordAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const admin = await requireAdminTI()
+
+  const raw = {
+    userId: formData.get('userId')?.toString() ?? '',
+    password: formData.get('password')?.toString() ?? '',
+    confirmPassword: formData.get('confirmPassword')?.toString() ?? '',
+  }
+
+  const result = resetPasswordSchema.safeParse(raw)
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message }
+  }
+
+  const { userId, password, confirmPassword } = result.data
+
+  if (password !== confirmPassword) {
+    return { success: false, error: 'Las contraseñas no coinciden.' }
+  }
+
+  if (userId === admin.id) {
+    return {
+      success: false,
+      error: 'No puedes restablecer tu propia contraseña desde esta pantalla.',
+    }
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) {
+    return { success: false, error: 'Usuario no encontrado.' }
+  }
+  if (user.deletedAt !== null) {
+    return {
+      success: false,
+      error: 'No se puede restablecer la contraseña de un usuario eliminado.',
+    }
+  }
+
+  const passwordHash = await hash(password, BCRYPT_COST)
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash,
+      mustChangePassword: true,
+    },
+  })
+
+  revalidatePath('/admin/users')
+  revalidatePath(`/admin/users/${userId}/edit`)
+  redirect(`/admin/users/${userId}/edit?passwordReset=success`)
+}
