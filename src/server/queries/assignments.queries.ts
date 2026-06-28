@@ -5,8 +5,10 @@ const assignmentListSelect = {
   id: true,
   assignedAt: true,
   returnedAt: true,
+  deliverySignedAt: true,
+  deliverySignedByName: true,
   asset: { select: { internalCode: true, name: true, serialNumber: true } },
-  user: { select: { firstName: true, lastName: true, email: true } },
+  user: { select: { firstName: true, lastName: true, email: true, position: true, role: true } },
   assignedByUser: { select: { firstName: true, lastName: true } },
   deliveryLocation: { select: { name: true } },
 } satisfies Prisma.AssetAssignmentSelect
@@ -67,7 +69,7 @@ export async function getAssignableAssets() {
 export async function getAssignableUsers() {
   return prisma.user.findMany({
     where: { isActive: true, deletedAt: null },
-    select: { id: true, firstName: true, lastName: true, email: true },
+    select: { id: true, firstName: true, lastName: true, email: true, position: true, role: true },
     orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
   })
 }

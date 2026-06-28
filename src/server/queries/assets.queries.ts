@@ -101,7 +101,11 @@ const assetFullDetailSelect = {
       assignedAt: true,
       returnedAt: true,
       notes: true,
-      user: { select: { firstName: true, lastName: true, email: true } },
+      deliverySignedAt: true,
+      deliverySignedByName: true,
+      user: {
+        select: { firstName: true, lastName: true, email: true, position: true, role: true },
+      },
       assignedByUser: { select: { firstName: true, lastName: true } },
       returnedByUser: { select: { firstName: true, lastName: true } },
       deliveryLocation: { select: { name: true } },

@@ -3,6 +3,11 @@ import { getAssignments } from '@/server/queries/assignments.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
+const ROLE_LABELS: Record<string, string> = {
+  admin_ti: 'Administrador TI',
+  usuario_final: 'Usuario Final',
+}
+
 export default async function AssignmentsPage() {
   const assignments = await getAssignments()
 
@@ -65,6 +70,7 @@ export default async function AssignmentsPage() {
                     'F. Asignación',
                     'F. Devolución',
                     'Estado',
+                    'Firma',
                     '',
                   ].map((h) => (
                     <th
@@ -132,8 +138,11 @@ export default async function AssignmentsPage() {
                         {a.asset.serialNumber}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                        <span style={{ display: 'block' }}>
+                        <span style={{ display: 'block', fontWeight: '500' }}>
                           {a.user.firstName} {a.user.lastName}
+                        </span>
+                        <span style={{ color: '#64748b', fontSize: '12px', display: 'block' }}>
+                          {a.user.position ?? ROLE_LABELS[a.user.role] ?? a.user.role}
                         </span>
                         <span style={{ color: '#94a3b8', fontSize: '12px' }}>{a.user.email}</span>
                       </td>
@@ -160,6 +169,13 @@ export default async function AssignmentsPage() {
                         <Badge variant={isActive ? 'default' : 'outline'}>
                           {isActive ? 'Activa' : 'Devuelta'}
                         </Badge>
+                      </td>
+                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                        {a.deliverySignedAt ? (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
+                        )}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                         {isActive && (

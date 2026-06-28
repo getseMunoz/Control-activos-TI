@@ -34,6 +34,22 @@ export async function createAssignmentAction(
 ): Promise<ActionResult> {
   const admin = await requireAdminTI()
 
+  const deliverySignedByName = formData.get('deliverySignedByName')?.toString().trim() ?? ''
+  const deliverySignatureData = formData.get('deliverySignatureData')?.toString() ?? ''
+
+  if (!deliverySignedByName) {
+    return { success: false, error: 'El nombre de quien firma es obligatorio.' }
+  }
+  if (!deliverySignatureData) {
+    return { success: false, error: 'La firma de recepción es obligatoria.' }
+  }
+  if (!deliverySignatureData.startsWith('data:image/png;base64,')) {
+    return { success: false, error: 'La firma de recepción no es válida.' }
+  }
+  if (deliverySignatureData.length > 500_000) {
+    return { success: false, error: 'La firma es demasiado grande. Intenta de nuevo.' }
+  }
+
   const raw = {
     assetId: formData.get('assetId')?.toString() ?? '',
     userId: formData.get('userId')?.toString() ?? '',
@@ -76,10 +92,17 @@ export async function createAssignmentAction(
   // Validar usuario: activo y no eliminado
   const user = await prisma.user.findUnique({
     where: { id: data.userId },
-    select: { id: true, isActive: true, deletedAt: true },
+    select: { id: true, isActive: true, deletedAt: true, firstName: true, lastName: true },
   })
   if (!user || !user.isActive || user.deletedAt !== null) {
     return { success: false, error: 'El usuario no existe o no está activo.' }
+  }
+  const expectedSignerName = `${user.firstName} ${user.lastName}`
+  if (deliverySignedByName !== expectedSignerName) {
+    return {
+      success: false,
+      error: 'El nombre del firmante no coincide con el usuario asignado.',
+    }
   }
 
   // Validar ubicación de entrega si se proporcionó
@@ -110,6 +133,9 @@ export async function createAssignmentAction(
           deliveryLocationId: data.deliveryLocationId ?? null,
           accessories,
           notes: data.notes ?? null,
+          deliverySignatureData,
+          deliverySignedByName,
+          deliverySignedAt: new Date(),
         },
       }),
       prisma.asset.update({

@@ -22,6 +22,11 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'outline' | 'des
   lost: 'destructive',
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin_ti: 'Administrador TI',
+  usuario_final: 'Usuario Final',
+}
+
 const INCIDENT_STATUS_LABELS: Record<string, string> = {
   open: 'Abierta',
   in_review: 'En revisión',
@@ -297,9 +302,21 @@ export default async function AssetDetailPage({ params }: Props) {
                     'Usuario',
                     `${activeAssignment.user.firstName} ${activeAssignment.user.lastName}`,
                   ],
+                  [
+                    'Puesto',
+                    activeAssignment.user.position ??
+                      ROLE_LABELS[activeAssignment.user.role] ??
+                      activeAssignment.user.role,
+                  ],
                   ['Correo', activeAssignment.user.email],
                   ['Fecha de asignación', fmt(activeAssignment.assignedAt)],
                   ['Ubicación de entrega', activeAssignment.deliveryLocation?.name],
+                  [
+                    'Firma de recepción',
+                    activeAssignment.deliverySignedAt ? 'Registrada' : 'Sin firma',
+                  ],
+                  ['Firmante', activeAssignment.deliverySignedByName],
+                  ['Fecha de firma', fmt(activeAssignment.deliverySignedAt)],
                 ].map(([label, value]) => (
                   <div key={label} style={rowStyle}>
                     <span style={labelStyle}>{label}</span>
@@ -351,6 +368,7 @@ export default async function AssetDetailPage({ params }: Props) {
                     'Asignado por',
                     'Devuelto por',
                     'Estado',
+                    'Firma',
                   ].map((h) => (
                     <th
                       key={h}
@@ -381,8 +399,11 @@ export default async function AssetDetailPage({ params }: Props) {
                       }}
                     >
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                        <span style={{ display: 'block' }}>
+                        <span style={{ display: 'block', fontWeight: '500' }}>
                           {a.user.firstName} {a.user.lastName}
+                        </span>
+                        <span style={{ color: '#64748b', fontSize: '12px', display: 'block' }}>
+                          {a.user.position ?? ROLE_LABELS[a.user.role] ?? a.user.role}
                         </span>
                         <span style={{ color: '#94a3b8', fontSize: '12px' }}>{a.user.email}</span>
                       </td>
@@ -407,6 +428,13 @@ export default async function AssetDetailPage({ params }: Props) {
                         <Badge variant={isActive ? 'default' : 'outline'}>
                           {isActive ? 'Activa' : 'Devuelta'}
                         </Badge>
+                      </td>
+                      <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                        {a.deliverySignedAt ? (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
+                        )}
                       </td>
                     </tr>
                   )
