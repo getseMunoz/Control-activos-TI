@@ -1,7 +1,18 @@
+import Link from 'next/link'
 import { auth, signOut } from '@/lib/auth'
+
+const navLinkStyle = {
+  display: 'block',
+  padding: '6px 8px',
+  borderRadius: '6px',
+  fontSize: '13px',
+  color: '#94a3b8',
+  textDecoration: 'none',
+} as const
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
+  const isAdmin = session?.user?.role === 'admin_ti'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -23,8 +34,38 @@ export default async function DashboardLayout({ children }: { children: React.Re
           CIPRIJAL Activos TI
         </div>
 
-        {/* Espacio de navegación futuro */}
-        <div style={{ flex: 1 }} />
+        {/* Navegación */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+          <Link href="/dashboard" style={navLinkStyle}>
+            Dashboard
+          </Link>
+
+          {isAdmin && (
+            <>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#475569',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  padding: '12px 8px 4px',
+                }}
+              >
+                Administración
+              </div>
+              <Link href="/admin/users" style={navLinkStyle}>
+                Usuarios
+              </Link>
+              <Link href="/admin/locations" style={navLinkStyle}>
+                Ubicaciones
+              </Link>
+              <Link href="/admin/asset-types" style={navLinkStyle}>
+                Tipos de activo
+              </Link>
+            </>
+          )}
+        </nav>
 
         {/* Usuario y cierre de sesión */}
         {session?.user && (
