@@ -468,6 +468,7 @@ export default async function AssetDetailPage({ params }: Props) {
                     'Resuelto por',
                     'F. Resolución',
                     'Descripción',
+                    '',
                   ].map((h) => (
                     <th
                       key={h}
@@ -548,6 +549,16 @@ export default async function AssetDetailPage({ params }: Props) {
                       title={inc.description}
                     >
                       {inc.description}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      {inc.status !== 'closed' && (
+                        <Link
+                          href={`/assets/${asset.id}/incidents/${inc.id}/edit`}
+                          style={{ color: '#3b82f6', fontSize: '13px' }}
+                        >
+                          Actualizar
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

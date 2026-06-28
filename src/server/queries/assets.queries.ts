@@ -235,6 +235,34 @@ export async function getAssetForIncidentById(id: string) {
   })
 }
 
+export async function getIncidentForEdit(assetId: string, incidentId: string) {
+  return prisma.incident.findFirst({
+    where: { id: incidentId, assetId },
+    select: {
+      id: true,
+      assetId: true,
+      incidentNumber: true,
+      title: true,
+      description: true,
+      priority: true,
+      status: true,
+      resolution: true,
+      resolvedAt: true,
+      createdAt: true,
+      asset: {
+        select: {
+          id: true,
+          internalCode: true,
+          name: true,
+          serialNumber: true,
+          status: true,
+          deletedAt: true,
+        },
+      },
+    },
+  })
+}
+
 export async function getActiveAssetTypes() {
   return prisma.assetType.findMany({
     where: { isActive: true },
