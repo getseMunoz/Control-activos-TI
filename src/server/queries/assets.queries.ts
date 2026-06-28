@@ -155,6 +155,37 @@ export async function getAssetForExpenseById(id: string) {
   })
 }
 
+export async function getMaintenanceOrderForEdit(assetId: string, orderId: string) {
+  return prisma.maintenanceOrder.findFirst({
+    where: { id: orderId, assetId },
+    select: {
+      id: true,
+      assetId: true,
+      orderNumber: true,
+      title: true,
+      description: true,
+      type: true,
+      status: true,
+      priority: true,
+      scheduledDate: true,
+      startedAt: true,
+      completedAt: true,
+      result: true,
+      cost: true,
+      asset: {
+        select: {
+          id: true,
+          internalCode: true,
+          name: true,
+          serialNumber: true,
+          status: true,
+          deletedAt: true,
+        },
+      },
+    },
+  })
+}
+
 export async function getAssetForMaintenanceById(id: string) {
   return prisma.asset.findUnique({
     where: { id },

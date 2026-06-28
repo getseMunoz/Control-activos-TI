@@ -733,6 +733,7 @@ export default async function AssetDetailPage({ params }: Props) {
                     'F. Completado',
                     'Creado por',
                     'Notas',
+                    '',
                   ].map((h) => (
                     <th
                       key={h}
@@ -821,6 +822,16 @@ export default async function AssetDetailPage({ params }: Props) {
                       title={m.description ?? undefined}
                     >
                       {m.description ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      {m.status !== 'completed' && m.status !== 'cancelled' && (
+                        <Link
+                          href={`/assets/${asset.id}/maintenance/${m.id}/edit`}
+                          style={{ color: '#3b82f6', fontSize: '13px' }}
+                        >
+                          Actualizar
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}
