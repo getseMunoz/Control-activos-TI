@@ -71,6 +71,15 @@ export default async function AssetsPage({ searchParams }: Props) {
 
   const hasFilters = Object.values(filters).some(Boolean)
 
+  const exportParams = new URLSearchParams()
+  if (raw.q) exportParams.set('q', raw.q)
+  if (raw.status) exportParams.set('status', raw.status)
+  if (raw.assetTypeId) exportParams.set('assetTypeId', raw.assetTypeId)
+  if (raw.locationId) exportParams.set('locationId', raw.locationId)
+  if (raw.assigned) exportParams.set('assigned', raw.assigned)
+  if (raw.hasAlerts) exportParams.set('hasAlerts', raw.hasAlerts)
+  const exportHref = `/assets/export${exportParams.toString() ? '?' + exportParams.toString() : ''}`
+
   const [assets, { assetTypes, locations }] = await Promise.all([
     getAssets(filters),
     getAssetFilterOptions(),
@@ -88,9 +97,28 @@ export default async function AssetsPage({ searchParams }: Props) {
         }}
       >
         <h1 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Activos TI</h1>
-        <Link href="/assets/new" className={buttonVariants()}>
-          + Nuevo activo
-        </Link>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link
+            href={exportHref}
+            style={{
+              height: '36px',
+              padding: '0 14px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: '#475569',
+              textDecoration: 'none',
+              background: 'white',
+            }}
+          >
+            Exportar CSV
+          </Link>
+          <Link href="/assets/new" className={buttonVariants()}>
+            + Nuevo activo
+          </Link>
+        </div>
       </div>
 
       {/* Formulario de filtros */}
