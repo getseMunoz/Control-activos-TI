@@ -374,7 +374,8 @@ export default async function AssetDetailPage({ params }: Props) {
                     'Asignado por',
                     'Devuelto por',
                     'Estado',
-                    'Firma',
+                    'Firma entrega',
+                    'Firma devol.',
                     '',
                   ].map((h) => (
                     <th
@@ -441,6 +442,15 @@ export default async function AssetDetailPage({ params }: Props) {
                           <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
                         ) : (
                           <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                        {a.returnedAt === null ? (
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>Pendiente</span>
+                        ) : a.returnSignedAt ? (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#ef4444' }}>Sin firma</span>
                         )}
                       </td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>

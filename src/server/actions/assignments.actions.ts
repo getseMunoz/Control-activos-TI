@@ -158,6 +158,22 @@ export async function returnAssignmentAction(
 ): Promise<ActionResult> {
   const admin = await requireAdminTI()
 
+  const returnSignedByName = formData.get('returnSignedByName')?.toString().trim() ?? ''
+  const returnSignatureData = formData.get('returnSignatureData')?.toString() ?? ''
+
+  if (!returnSignedByName) {
+    return { success: false, error: 'El nombre del firmante de devolución es obligatorio.' }
+  }
+  if (!returnSignatureData) {
+    return { success: false, error: 'La firma de devolución es obligatoria.' }
+  }
+  if (!returnSignatureData.startsWith('data:image/png;base64,')) {
+    return { success: false, error: 'La firma de devolución no es válida.' }
+  }
+  if (returnSignatureData.length > 500_000) {
+    return { success: false, error: 'La firma es demasiado grande. Intenta de nuevo.' }
+  }
+
   const raw = {
     id: formData.get('id')?.toString() ?? '',
     returnedAt: formData.get('returnedAt')?.toString() ?? '',
@@ -174,13 +190,31 @@ export async function returnAssignmentAction(
   // Verificar que la asignación exista y esté activa
   const assignment = await prisma.assetAssignment.findUnique({
     where: { id: data.id },
-    select: { id: true, assetId: true, assignedAt: true, returnedAt: true },
+    select: {
+      id: true,
+      assetId: true,
+      assignedAt: true,
+      returnedAt: true,
+      asset: { select: { deletedAt: true } },
+      user: { select: { firstName: true, lastName: true } },
+    },
   })
   if (!assignment) {
     return { success: false, error: 'Asignación no encontrada.' }
   }
   if (assignment.returnedAt !== null) {
     return { success: false, error: 'Esta asignación ya fue devuelta anteriormente.' }
+  }
+  if (assignment.asset.deletedAt !== null) {
+    return { success: false, error: 'El activo asociado está archivado.' }
+  }
+
+  const expectedSignerName = `${assignment.user.firstName} ${assignment.user.lastName}`
+  if (returnSignedByName !== expectedSignerName) {
+    return {
+      success: false,
+      error: 'El nombre del firmante no coincide con el usuario asignado.',
+    }
   }
 
   const returnedAt = new Date(data.returnedAt)
@@ -203,6 +237,9 @@ export async function returnAssignmentAction(
           returnedAt,
           returnedBy: admin.id,
           notes: data.notes ?? null,
+          returnSignatureData,
+          returnSignedByName,
+          returnSignedAt: new Date(),
         },
       }),
       prisma.asset.update({

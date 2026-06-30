@@ -2,7 +2,15 @@
 
 import { useRef, useEffect, useCallback } from 'react'
 
-export function SignaturePad() {
+type Props = {
+  fieldName?: string
+  label?: string
+}
+
+export function SignaturePad({
+  fieldName = 'deliverySignatureData',
+  label = 'Firma de quien recibe el equipo',
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hiddenInputRef = useRef<HTMLInputElement>(null)
   const isDrawing = useRef(false)
@@ -95,9 +103,7 @@ export function SignaturePad() {
 
   return (
     <div className="space-y-2">
-      <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>
-        Firma de quien recibe el equipo
-      </p>
+      <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>{label}</p>
       <div
         style={{
           border: '1px solid #e2e8f0',
@@ -134,7 +140,7 @@ export function SignaturePad() {
       >
         Limpiar firma
       </button>
-      <input ref={hiddenInputRef} type="hidden" name="deliverySignatureData" />
+      <input ref={hiddenInputRef} type="hidden" name={fieldName} />
     </div>
   )
 }

@@ -70,7 +70,8 @@ export default async function AssignmentsPage() {
                     'F. Asignación',
                     'F. Devolución',
                     'Estado',
-                    'Firma',
+                    'Firma entrega',
+                    'Firma devol.',
                     '',
                   ].map((h) => (
                     <th
@@ -175,6 +176,15 @@ export default async function AssignmentsPage() {
                           <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
                         ) : (
                           <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                        {a.returnedAt === null ? (
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>Pendiente</span>
+                        ) : a.returnSignedAt ? (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>Firmada</span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#ef4444' }}>Sin firma</span>
                         )}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>

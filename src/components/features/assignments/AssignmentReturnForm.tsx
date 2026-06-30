@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { returnAssignmentAction } from '@/server/actions/assignments.actions'
+import { SignaturePad } from '@/components/features/assignments/SignaturePad'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -19,10 +20,12 @@ export function AssignmentReturnForm({ assignment }: Props) {
 
   const today = new Date().toISOString().split('T')[0]
   const existingNotes = typeof assignment.notes === 'string' ? assignment.notes : ''
+  const signerName = `${assignment.user.firstName} ${assignment.user.lastName}`
 
   return (
     <form action={action} className="space-y-5">
       <input type="hidden" name="id" value={assignment.id} />
+      <input type="hidden" name="returnSignedByName" value={signerName} />
 
       {/* Datos de la asignación (solo lectura) */}
       <div className="bg-muted space-y-2 rounded-lg border p-4 text-sm">
@@ -69,6 +72,17 @@ export function AssignmentReturnForm({ assignment }: Props) {
           defaultValue={existingNotes}
           placeholder="Condición del equipo al retorno, observaciones…"
         />
+      </div>
+
+      {/* Firma de devolución */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-medium">Firma de devolución *</p>
+          <p style={{ fontSize: '13px', color: '#475569', margin: '2px 0 0' }}>
+            Firmará devolución como: <strong>{signerName}</strong>
+          </p>
+        </div>
+        <SignaturePad fieldName="returnSignatureData" label="Firma de quien devuelve el equipo" />
       </div>
 
       {state && !state.success && <p className="text-destructive text-sm">{state.error}</p>}

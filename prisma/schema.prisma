@@ -275,6 +275,9 @@ model AssetAssignment {
   deliverySignedByName  String?         @map("delivery_signed_by_name")
   deliveryDocumentId    String?         @map("delivery_document_id")
   returnDocumentId      String?         @map("return_document_id")
+  returnSignatureData   String?         @db.Text @map("return_signature_data")
+  returnSignedAt        DateTime?       @map("return_signed_at")
+  returnSignedByName    String?         @map("return_signed_by_name")
   createdAt             DateTime        @default(now()) @map("created_at")
 
   asset            Asset     @relation(fields: [assetId], references: [id])

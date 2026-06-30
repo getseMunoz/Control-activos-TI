@@ -7,6 +7,8 @@ const assignmentListSelect = {
   returnedAt: true,
   deliverySignedAt: true,
   deliverySignedByName: true,
+  returnSignedAt: true,
+  returnSignedByName: true,
   asset: { select: { internalCode: true, name: true, serialNumber: true } },
   user: { select: { firstName: true, lastName: true, email: true, position: true, role: true } },
   assignedByUser: { select: { firstName: true, lastName: true } },

@@ -220,6 +220,8 @@ const assetFullDetailSelect = {
       notes: true,
       deliverySignedAt: true,
       deliverySignedByName: true,
+      returnSignedAt: true,
+      returnSignedByName: true,
       user: {
         select: { firstName: true, lastName: true, email: true, position: true, role: true },
       },
