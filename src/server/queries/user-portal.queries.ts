@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export async function getUserPortalSummary(userId: string) {
-  const [activeAssignments, recentIncidents] = await Promise.all([
+  const [activeAssignments, returnedAssignments, recentIncidents] = await Promise.all([
     prisma.assetAssignment.findMany({
       where: {
         userId,
@@ -29,6 +29,28 @@ export async function getUserPortalSummary(userId: string) {
       },
       orderBy: { assignedAt: 'desc' },
     }),
+    prisma.assetAssignment.findMany({
+      where: {
+        userId,
+        returnedAt: { not: null },
+        asset: { deletedAt: null },
+      },
+      select: {
+        id: true,
+        assignedAt: true,
+        returnedAt: true,
+        returnSignedAt: true,
+        asset: {
+          select: {
+            internalCode: true,
+            name: true,
+            assetType: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { returnedAt: 'desc' },
+      take: 10,
+    }),
     prisma.incident.findMany({
       where: { reportedBy: userId },
       select: {
@@ -47,7 +69,7 @@ export async function getUserPortalSummary(userId: string) {
     }),
   ])
 
-  return { activeAssignments, recentIncidents }
+  return { activeAssignments, returnedAssignments, recentIncidents }
 }
 
 export type UserPortalSummary = Awaited<ReturnType<typeof getUserPortalSummary>>

@@ -454,12 +454,22 @@ export default async function AssetDetailPage({ params }: Props) {
                         )}
                       </td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                        <Link
-                          href={`/assignments/${a.id}/receipt`}
-                          style={{ fontSize: '12px', color: '#3b82f6' }}
-                        >
-                          Responsiva
-                        </Link>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <Link
+                            href={`/assignments/${a.id}/receipt`}
+                            style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none' }}
+                          >
+                            Responsiva
+                          </Link>
+                          {a.returnedAt !== null && (
+                            <Link
+                              href={`/assignments/${a.id}/return-receipt`}
+                              style={{ fontSize: '12px', color: '#7c3aed', textDecoration: 'none' }}
+                            >
+                              Resp. devolución
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

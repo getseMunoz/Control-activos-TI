@@ -15,10 +15,15 @@ const ADMIN_ONLY_PREFIXES = [
   '/dashboard',
 ]
 
-// Rutas de responsiva: /assignments/<id>/receipt — accesibles a cualquier usuario autenticado.
-// La validación de propiedad ocurre dentro de la propia página.
-function isReceiptRoute(pathname: string): boolean {
-  return /^\/assignments\/[^/]+\/receipt(\/.*)?$/.test(pathname)
+// Documentos de asignación accesibles a cualquier usuario autenticado:
+//   /assignments/<id>/receipt
+//   /assignments/<id>/return-receipt
+// La validación de propiedad ocurre dentro de cada página.
+function isAssignmentDocumentRoute(pathname: string): boolean {
+  return (
+    /^\/assignments\/[^/]+\/receipt(\/.*)?$/.test(pathname) ||
+    /^\/assignments\/[^/]+\/return-receipt(\/.*)?$/.test(pathname)
+  )
 }
 
 export default auth((req) => {
@@ -42,9 +47,9 @@ export default auth((req) => {
   }
 
   // Verificar acceso a rutas admin-only
-  // Excepción: la responsiva es accesible a cualquier usuario autenticado
+  // Excepción: responsiva de entrega y de devolución son accesibles a cualquier usuario autenticado
   const adminRoute = ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  if (adminRoute && !isReceiptRoute(pathname) && session.user?.role !== 'admin_ti') {
+  if (adminRoute && !isAssignmentDocumentRoute(pathname) && session.user?.role !== 'admin_ti') {
     return NextResponse.redirect(new URL('/my-assets', req.url))
   }
 

@@ -195,6 +195,14 @@ export default async function AssignmentsPage() {
                           >
                             Responsiva
                           </Link>
+                          {!isActive && (
+                            <Link
+                              href={`/assignments/${a.id}/return-receipt`}
+                              style={{ fontSize: '13px', color: '#7c3aed', textDecoration: 'none' }}
+                            >
+                              Resp. devolución
+                            </Link>
+                          )}
                           {isActive && (
                             <Link
                               href={`/assignments/${a.id}/return`}

@@ -138,3 +138,66 @@ export async function getAssignmentReceiptById(
     select: assignmentReceiptSelect,
   })
 }
+
+const assignmentReturnReceiptSelect = {
+  id: true,
+  userId: true,
+  assignedAt: true,
+  returnedAt: true,
+  returnSignedAt: true,
+  returnSignedByName: true,
+  returnSignatureData: true,
+  notes: true,
+  accessories: true,
+  asset: {
+    select: {
+      id: true,
+      internalCode: true,
+      name: true,
+      serialNumber: true,
+      brand: true,
+      model: true,
+      partNumber: true,
+      status: true,
+      assetType: { select: { name: true } },
+      location: { select: { name: true } },
+    },
+  },
+  user: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      position: true,
+      role: true,
+    },
+  },
+  assignedByUser: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  },
+  returnedByUser: {
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  },
+  deliveryLocation: { select: { name: true } },
+} satisfies Prisma.AssetAssignmentSelect
+
+export type AssignmentReturnReceipt = Prisma.AssetAssignmentGetPayload<{
+  select: typeof assignmentReturnReceiptSelect
+}>
+
+export async function getAssignmentReturnReceiptById(
+  assignmentId: string,
+): Promise<AssignmentReturnReceipt | null> {
+  return prisma.assetAssignment.findUnique({
+    where: { id: assignmentId },
+    select: assignmentReturnReceiptSelect,
+  })
+}

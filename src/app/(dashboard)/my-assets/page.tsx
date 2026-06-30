@@ -60,7 +60,9 @@ const cardStyle = {
 
 export default async function MyAssetsPage() {
   const user = await requireAuthenticatedUser()
-  const { activeAssignments, recentIncidents } = await getUserPortalSummary(user.id)
+  const { activeAssignments, returnedAssignments, recentIncidents } = await getUserPortalSummary(
+    user.id,
+  )
 
   return (
     <div style={{ padding: '32px', maxWidth: '960px' }}>
@@ -235,6 +237,101 @@ export default async function MyAssetsPage() {
           </div>
         )}
       </div>
+
+      {/* Devoluciones recientes */}
+      {returnedAssignments.length > 0 && (
+        <div style={cardStyle}>
+          <h2
+            style={{
+              fontSize: '13px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: '#475569',
+              margin: '0 0 16px',
+            }}
+          >
+            Devoluciones recientes ({returnedAssignments.length})
+          </h2>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                  {['Equipo', 'Tipo', 'F. Asignación', 'F. Devolución', 'Firma devol.', ''].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '8px 10px',
+                          textAlign: 'left',
+                          fontWeight: '600',
+                          color: '#475569',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {returnedAssignments.map((a, i) => (
+                  <tr
+                    key={a.id}
+                    style={{
+                      borderBottom:
+                        i < returnedAssignments.length - 1 ? '1px solid #f1f5f9' : undefined,
+                      opacity: 0.85,
+                    }}
+                  >
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'block', fontWeight: '500', color: '#0f172a' }}>
+                        {a.asset.name}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b' }}>
+                        {a.asset.internalCode}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {a.asset.assetType.name}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(a.assignedAt)}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
+                      {fmt(a.returnedAt)}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      {a.returnSignedAt ? (
+                        <span style={{ fontSize: '12px', color: '#16a34a' }}>Registrada</span>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sin firma</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <Link
+                          href={`/assignments/${a.id}/receipt`}
+                          style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none' }}
+                        >
+                          Responsiva
+                        </Link>
+                        <Link
+                          href={`/assignments/${a.id}/return-receipt`}
+                          style={{ fontSize: '12px', color: '#7c3aed', textDecoration: 'none' }}
+                        >
+                          Resp. devolución
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Mis reportes de falla */}
       <div style={cardStyle}>
