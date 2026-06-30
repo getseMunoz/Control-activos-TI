@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { getAssignments } from '@/server/queries/assignments.queries'
+import { getAssignments, getAssignmentFilterOptions } from '@/server/queries/assignments.queries'
+import type { AssignmentListFilters } from '@/server/queries/assignments.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -8,20 +9,61 @@ const ROLE_LABELS: Record<string, string> = {
   usuario_final: 'Usuario Final',
 }
 
-export default async function AssignmentsPage() {
-  const assignments = await getAssignments()
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Activas' },
+  { value: 'returned', label: 'Devueltas' },
+  { value: 'returned_with_signature', label: 'Devueltas con firma' },
+  { value: 'returned_without_signature', label: 'Devueltas sin firma' },
+]
+
+const inputClass =
+  'border border-[#e2e8f0] rounded-md px-2.5 py-1.5 text-sm bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#3b82f6]/40 h-8'
+
+const selectClass =
+  'border border-[#e2e8f0] rounded-md px-2 py-1.5 text-sm bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#3b82f6]/40 h-8'
+
+type Props = {
+  searchParams: Promise<{
+    q?: string
+    status?: string
+    userId?: string
+    assetId?: string
+    dateFrom?: string
+    dateTo?: string
+  }>
+}
+
+export default async function AssignmentsPage({ searchParams }: Props) {
+  const raw = await searchParams
+
+  const filters: AssignmentListFilters = {
+    q: raw.q?.trim() || undefined,
+    status: raw.status || undefined,
+    userId: raw.userId?.trim() || undefined,
+    assetId: raw.assetId?.trim() || undefined,
+    dateFrom: raw.dateFrom?.trim() || undefined,
+    dateTo: raw.dateTo?.trim() || undefined,
+  }
+
+  const hasFilters = Object.values(filters).some(Boolean)
+
+  const [assignments, { users, assets }] = await Promise.all([
+    getAssignments(filters),
+    getAssignmentFilterOptions(),
+  ])
 
   const active = assignments.filter((a) => a.returnedAt === null)
   const returned = assignments.filter((a) => a.returnedAt !== null)
 
   return (
     <div style={{ padding: '32px' }}>
+      {/* Encabezado */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '24px',
+          marginBottom: '20px',
         }}
       >
         <div>
@@ -36,6 +78,195 @@ export default async function AssignmentsPage() {
         </Link>
       </div>
 
+      {/* Formulario de filtros */}
+      <form
+        method="GET"
+        action="/assignments"
+        style={{
+          background: 'white',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '16px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '10px',
+          alignItems: 'flex-end',
+        }}
+      >
+        {/* Búsqueda libre */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Búsqueda
+          </label>
+          <input
+            name="q"
+            type="text"
+            defaultValue={raw.q ?? ''}
+            placeholder="Código, nombre, serie, usuario…"
+            className={inputClass}
+            style={{ minWidth: '200px' }}
+          />
+        </div>
+
+        {/* Estado */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Estado
+          </label>
+          <select name="status" defaultValue={raw.status ?? ''} className={selectClass}>
+            <option value="">Todos</option>
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Usuario */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Usuario
+          </label>
+          <select name="userId" defaultValue={raw.userId ?? ''} className={selectClass}>
+            <option value="">Todos</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.firstName} {u.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Activo */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Activo
+          </label>
+          <select name="assetId" defaultValue={raw.assetId ?? ''} className={selectClass}>
+            <option value="">Todos</option>
+            {assets.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.internalCode} — {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Desde */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Desde
+          </label>
+          <input
+            name="dateFrom"
+            type="date"
+            defaultValue={raw.dateFrom ?? ''}
+            className={inputClass}
+          />
+        </div>
+
+        {/* Hasta */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Hasta
+          </label>
+          <input name="dateTo" type="date" defaultValue={raw.dateTo ?? ''} className={inputClass} />
+        </div>
+
+        {/* Acciones */}
+        <div style={{ display: 'flex', gap: '8px', paddingBottom: '1px' }}>
+          <button type="submit" className={buttonVariants({ variant: 'default', size: 'sm' })}>
+            Filtrar
+          </button>
+          <Link href="/assignments" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Limpiar
+          </Link>
+        </div>
+      </form>
+
+      {/* Contador y estado de filtros */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '12px',
+          fontSize: '13px',
+          color: '#64748b',
+        }}
+      >
+        <span>
+          Mostrando {assignments.length} asignación{assignments.length !== 1 ? 'es' : ''}
+        </span>
+        {hasFilters && (
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              background: '#eff6ff',
+              color: '#3b82f6',
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Filtros activos
+          </span>
+        )}
+      </div>
+
+      {/* Tabla */}
       {assignments.length === 0 ? (
         <div
           style={{
@@ -46,7 +277,11 @@ export default async function AssignmentsPage() {
             border: '1px solid #e2e8f0',
           }}
         >
-          <p style={{ color: '#64748b', fontSize: '14px' }}>No hay asignaciones registradas aún.</p>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>
+            {hasFilters
+              ? 'No se encontraron asignaciones con los filtros seleccionados.'
+              : 'No hay asignaciones registradas aún.'}
+          </p>
         </div>
       ) : (
         <div
@@ -100,12 +335,7 @@ export default async function AssignmentsPage() {
                         opacity: isActive ? 1 : 0.7,
                       }}
                     >
-                      <td
-                        style={{
-                          padding: '10px 12px',
-                          maxWidth: '180px',
-                        }}
-                      >
+                      <td style={{ padding: '10px 12px', maxWidth: '180px' }}>
                         <span
                           style={{
                             display: 'block',

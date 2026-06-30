@@ -1,6 +1,32 @@
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isUuid(v: string | undefined): v is string {
+  return Boolean(v && UUID_RE.test(v))
+}
+
+function isValidDate(v: string | undefined): v is string {
+  return Boolean(v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)))
+}
+
+export type AssignmentListFilters = {
+  q?: string
+  status?: string
+  userId?: string
+  assetId?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+const VALID_ASSIGNMENT_STATUSES = [
+  'active',
+  'returned',
+  'returned_with_signature',
+  'returned_without_signature',
+]
+
 const assignmentListSelect = {
   id: true,
   assignedAt: true,
@@ -9,8 +35,10 @@ const assignmentListSelect = {
   deliverySignedByName: true,
   returnSignedAt: true,
   returnSignedByName: true,
-  asset: { select: { internalCode: true, name: true, serialNumber: true } },
-  user: { select: { firstName: true, lastName: true, email: true, position: true, role: true } },
+  asset: { select: { id: true, internalCode: true, name: true, serialNumber: true } },
+  user: {
+    select: { id: true, firstName: true, lastName: true, email: true, position: true, role: true },
+  },
   assignedByUser: { select: { firstName: true, lastName: true } },
   deliveryLocation: { select: { name: true } },
 } satisfies Prisma.AssetAssignmentSelect
@@ -19,11 +47,91 @@ export type AssignmentListItem = Prisma.AssetAssignmentGetPayload<{
   select: typeof assignmentListSelect
 }>
 
-export async function getAssignments(): Promise<AssignmentListItem[]> {
+export async function getAssignments(
+  rawFilters?: AssignmentListFilters,
+): Promise<AssignmentListItem[]> {
+  const filters: AssignmentListFilters = {
+    q: rawFilters?.q?.trim() || undefined,
+    status:
+      rawFilters?.status && VALID_ASSIGNMENT_STATUSES.includes(rawFilters.status)
+        ? rawFilters.status
+        : undefined,
+    userId: isUuid(rawFilters?.userId) ? rawFilters!.userId : undefined,
+    assetId: isUuid(rawFilters?.assetId) ? rawFilters!.assetId : undefined,
+    dateFrom: isValidDate(rawFilters?.dateFrom) ? rawFilters!.dateFrom : undefined,
+    dateTo: isValidDate(rawFilters?.dateTo) ? rawFilters!.dateTo : undefined,
+  }
+
+  const where: Prisma.AssetAssignmentWhereInput = {}
+
+  // Filter by status
+  if (filters.status === 'active') {
+    where.returnedAt = null
+  } else if (filters.status === 'returned') {
+    where.returnedAt = { not: null }
+  } else if (filters.status === 'returned_with_signature') {
+    where.returnedAt = { not: null }
+    where.returnSignedAt = { not: null }
+  } else if (filters.status === 'returned_without_signature') {
+    where.returnedAt = { not: null }
+    where.returnSignedAt = null
+  }
+
+  // Filter by userId
+  if (filters.userId) {
+    where.userId = filters.userId
+  }
+
+  // Filter by assetId
+  if (filters.assetId) {
+    where.assetId = filters.assetId
+  }
+
+  // Filter by assignedAt range
+  if (filters.dateFrom || filters.dateTo) {
+    where.assignedAt = {}
+    if (filters.dateFrom) {
+      where.assignedAt.gte = new Date(`${filters.dateFrom}T00:00:00.000Z`)
+    }
+    if (filters.dateTo) {
+      where.assignedAt.lte = new Date(`${filters.dateTo}T23:59:59.999Z`)
+    }
+  }
+
+  // Free-text search across asset and user fields
+  if (filters.q) {
+    const q = filters.q
+    where.OR = [
+      { asset: { internalCode: { contains: q, mode: 'insensitive' } } },
+      { asset: { name: { contains: q, mode: 'insensitive' } } },
+      { asset: { serialNumber: { contains: q, mode: 'insensitive' } } },
+      { user: { firstName: { contains: q, mode: 'insensitive' } } },
+      { user: { lastName: { contains: q, mode: 'insensitive' } } },
+      { user: { email: { contains: q, mode: 'insensitive' } } },
+    ]
+  }
+
   return prisma.assetAssignment.findMany({
+    where,
     select: assignmentListSelect,
-    orderBy: [{ returnedAt: { sort: 'asc', nulls: 'first' } }, { assignedAt: 'desc' }],
+    orderBy: [{ assignedAt: 'desc' }],
   })
+}
+
+export async function getAssignmentFilterOptions() {
+  const [users, assets] = await Promise.all([
+    prisma.user.findMany({
+      where: { deletedAt: null, isActive: true },
+      select: { id: true, firstName: true, lastName: true, email: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    }),
+    prisma.asset.findMany({
+      where: { deletedAt: null },
+      select: { id: true, internalCode: true, name: true },
+      orderBy: { internalCode: 'asc' },
+    }),
+  ])
+  return { users, assets }
 }
 
 const assignmentDetailSelect = {
