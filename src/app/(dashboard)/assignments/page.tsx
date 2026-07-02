@@ -47,6 +47,15 @@ export default async function AssignmentsPage({ searchParams }: Props) {
 
   const hasFilters = Object.values(filters).some(Boolean)
 
+  const exportParams = new URLSearchParams()
+  if (raw.q) exportParams.set('q', raw.q)
+  if (raw.status) exportParams.set('status', raw.status)
+  if (raw.userId) exportParams.set('userId', raw.userId)
+  if (raw.assetId) exportParams.set('assetId', raw.assetId)
+  if (raw.dateFrom) exportParams.set('dateFrom', raw.dateFrom)
+  if (raw.dateTo) exportParams.set('dateTo', raw.dateTo)
+  const exportHref = `/assignments/export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`
+
   const [assignments, { users, assets }] = await Promise.all([
     getAssignments(filters),
     getAssignmentFilterOptions(),
@@ -73,9 +82,14 @@ export default async function AssignmentsPage({ searchParams }: Props) {
             {returned.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/assignments/new" className={buttonVariants()}>
-          + Nueva asignación
-        </Link>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link href={exportHref} className={buttonVariants({ variant: 'outline' })}>
+            Exportar CSV
+          </Link>
+          <Link href="/assignments/new" className={buttonVariants()}>
+            + Nueva asignación
+          </Link>
+        </div>
       </div>
 
       {/* Formulario de filtros */}

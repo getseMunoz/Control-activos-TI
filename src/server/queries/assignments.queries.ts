@@ -35,11 +35,14 @@ const assignmentListSelect = {
   deliverySignedByName: true,
   returnSignedAt: true,
   returnSignedByName: true,
+  notes: true,
+  accessories: true,
   asset: { select: { id: true, internalCode: true, name: true, serialNumber: true } },
   user: {
     select: { id: true, firstName: true, lastName: true, email: true, position: true, role: true },
   },
   assignedByUser: { select: { firstName: true, lastName: true } },
+  returnedByUser: { select: { firstName: true, lastName: true } },
   deliveryLocation: { select: { name: true } },
 } satisfies Prisma.AssetAssignmentSelect
 
