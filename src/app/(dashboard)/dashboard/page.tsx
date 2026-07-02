@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
+import type React from 'react'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { getDashboardSummary } from '@/server/queries/dashboard.queries'
+import { getDashboardSummary, getDashboardAlerts } from '@/server/queries/dashboard.queries'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata: Metadata = {
@@ -96,6 +97,102 @@ const cardStyle = {
   padding: '20px 24px',
 }
 
+const actionLink: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#3b82f6',
+  textDecoration: 'none',
+  flexShrink: 0,
+  alignSelf: 'flex-start',
+}
+
+function Mono({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        background: '#f1f5f9',
+        padding: '1px 5px',
+        borderRadius: '3px',
+        color: '#475569',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+function AlertRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: '8px',
+        paddingBottom: '8px',
+        borderBottom: '1px solid #f1f5f9',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function AlertCard({
+  title,
+  count,
+  actionHref,
+  actionLabel,
+  danger = false,
+  children,
+}: {
+  title: string
+  count: number
+  actionHref: string
+  actionLabel: string
+  danger?: boolean
+  children: React.ReactNode
+}) {
+  const hasItems = count > 0
+  const countColor = danger && hasItems ? '#dc2626' : hasItems ? '#d97706' : '#16a34a'
+  return (
+    <div style={{ ...cardStyle, padding: '16px 20px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>{title}</span>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: '700',
+              color: countColor,
+              background: hasItems ? (danger ? '#fef2f2' : '#fffbeb') : '#f0fdf4',
+              padding: '1px 7px',
+              borderRadius: '9999px',
+            }}
+          >
+            {count}
+          </span>
+        </div>
+        <Link
+          href={actionHref}
+          style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none' }}
+        >
+          {actionLabel} →
+        </Link>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>{children}</div>
+    </div>
+  )
+}
+
 const sectionTitle = {
   fontSize: '13px',
   fontWeight: '600' as const,
@@ -113,7 +210,11 @@ const emptyText = {
 }
 
 export default async function DashboardPage() {
-  const [session, summary] = await Promise.all([auth(), getDashboardSummary()])
+  const [session, summary, alerts] = await Promise.all([
+    auth(),
+    getDashboardSummary(),
+    getDashboardAlerts(),
+  ])
 
   const stats = [
     { label: 'Total de activos', value: summary.totalAssets, accent: '#0f172a' },
@@ -164,6 +265,277 @@ export default async function DashboardPage() {
           })}{' '}
           <span style={{ fontSize: '14px', fontWeight: '400', color: '#64748b' }}>MXN</span>
         </p>
+      </div>
+
+      {/* Alertas operativas */}
+      <div style={{ marginBottom: '28px' }}>
+        <h2
+          style={{
+            fontSize: '15px',
+            fontWeight: '600',
+            color: '#0f172a',
+            margin: '0 0 14px 0',
+          }}
+        >
+          Alertas operativas
+        </h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+          }}
+        >
+          {/* A — Incidencias abiertas */}
+          <AlertCard
+            title="Incidencias abiertas"
+            count={alerts.openIncidentsCount}
+            actionHref="/assets"
+            actionLabel="Ver activos"
+          >
+            {alerts.openIncidents.length === 0 ? (
+              <p style={emptyText}>Sin pendientes.</p>
+            ) : (
+              alerts.openIncidents.map((inc) => (
+                <AlertRow key={inc.id}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '5px',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Mono>{inc.incidentNumber}</Mono>
+                      <Badge
+                        variant={INCIDENT_STATUS_VARIANTS[inc.status] ?? 'outline'}
+                        style={{ fontSize: '10px', padding: '0 5px' }}
+                      >
+                        {INCIDENT_STATUS_LABELS[inc.status] ?? inc.status}
+                      </Badge>
+                      <Badge
+                        variant={PRIORITY_VARIANTS[inc.priority] ?? 'outline'}
+                        style={{ fontSize: '10px', padding: '0 5px' }}
+                      >
+                        {PRIORITY_LABELS[inc.priority] ?? inc.priority}
+                      </Badge>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        margin: '2px 0 0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={inc.title}
+                    >
+                      {inc.title}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
+                      {inc.asset.internalCode} · {fmt(inc.createdAt)}
+                      {inc.reportedByUser
+                        ? ` · ${inc.reportedByUser.firstName} ${inc.reportedByUser.lastName}`
+                        : ''}
+                    </p>
+                  </div>
+                  <Link href={`/assets/${inc.assetId}`} style={actionLink}>
+                    Ver activo
+                  </Link>
+                </AlertRow>
+              ))
+            )}
+          </AlertCard>
+
+          {/* B — Mantenimientos pendientes/en proceso */}
+          <AlertCard
+            title="Mantenimientos activos"
+            count={alerts.activeMaintenanceCount}
+            actionHref="/assets"
+            actionLabel="Ver activos"
+          >
+            {alerts.activeMaintenanceOrders.length === 0 ? (
+              <p style={emptyText}>Sin pendientes.</p>
+            ) : (
+              alerts.activeMaintenanceOrders.map((m) => (
+                <AlertRow key={m.id}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '5px',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Mono>{m.orderNumber}</Mono>
+                      <Badge
+                        variant={MAINTENANCE_STATUS_VARIANTS[m.status] ?? 'outline'}
+                        style={{ fontSize: '10px', padding: '0 5px' }}
+                      >
+                        {MAINTENANCE_STATUS_LABELS[m.status] ?? m.status}
+                      </Badge>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        margin: '2px 0 0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={m.title}
+                    >
+                      {m.title}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
+                      {m.asset.internalCode} · {fmt(m.createdAt)}
+                    </p>
+                  </div>
+                  <Link href={`/assets/${m.assetId}`} style={actionLink}>
+                    Ver activo
+                  </Link>
+                </AlertRow>
+              ))
+            )}
+          </AlertCard>
+
+          {/* C — Asignaciones activas sin firma de entrega */}
+          <AlertCard
+            title="Sin firma de entrega"
+            count={alerts.unsignedActiveAssignmentsCount}
+            actionHref="/assignments?status=active"
+            actionLabel="Ver asignaciones"
+          >
+            {alerts.unsignedActiveAssignments.length === 0 ? (
+              <p style={emptyText}>Sin pendientes.</p>
+            ) : (
+              alerts.unsignedActiveAssignments.map((a) => (
+                <AlertRow key={a.id}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {a.user.firstName} {a.user.lastName}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
+                      {a.asset.internalCode} · {a.asset.name} · {fmt(a.assignedAt)}
+                    </p>
+                  </div>
+                  <Link href={`/assignments/${a.id}/receipt`} style={actionLink}>
+                    Responsiva
+                  </Link>
+                </AlertRow>
+              ))
+            )}
+          </AlertCard>
+
+          {/* D — Devoluciones sin firma */}
+          <AlertCard
+            title="Devoluciones sin firma"
+            count={alerts.unsignedReturnAssignmentsCount}
+            actionHref="/assignments?status=returned_without_signature"
+            actionLabel="Ver asignaciones"
+          >
+            {alerts.unsignedReturnAssignments.length === 0 ? (
+              <p style={emptyText}>Sin pendientes.</p>
+            ) : (
+              alerts.unsignedReturnAssignments.map((a) => (
+                <AlertRow key={a.id}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {a.user.firstName} {a.user.lastName}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
+                      {a.asset.internalCode} · {a.asset.name} · Devuelto {fmt(a.returnedAt)}
+                    </p>
+                  </div>
+                  <Link href={`/assignments/${a.id}/return-receipt`} style={actionLink}>
+                    Resp. devol.
+                  </Link>
+                </AlertRow>
+              ))
+            )}
+          </AlertCard>
+
+          {/* E — Activos perdidos/robados */}
+          <AlertCard
+            title="Activos perdidos / robados"
+            count={alerts.lostOrStolenAssetsCount}
+            actionHref="/assets?status=lost"
+            actionLabel="Ver activos"
+            danger
+          >
+            {alerts.lostOrStolenAssets.length === 0 ? (
+              <p style={emptyText}>Sin pendientes.</p>
+            ) : (
+              alerts.lostOrStolenAssets.map((asset) => (
+                <AlertRow key={asset.id}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '5px',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Mono>{asset.internalCode}</Mono>
+                      <Badge variant="destructive" style={{ fontSize: '10px', padding: '0 5px' }}>
+                        {ASSET_STATUS_LABELS[asset.status] ?? asset.status}
+                      </Badge>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#0f172a',
+                        margin: '2px 0 0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={asset.name}
+                    >
+                      {asset.name}
+                    </p>
+                    {asset.location && (
+                      <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
+                        {asset.location.name}
+                      </p>
+                    )}
+                  </div>
+                  <Link href={`/assets/${asset.id}`} style={actionLink}>
+                    Ver activo
+                  </Link>
+                </AlertRow>
+              ))
+            )}
+          </AlertCard>
+        </div>
       </div>
 
       {/* Listas rápidas */}
