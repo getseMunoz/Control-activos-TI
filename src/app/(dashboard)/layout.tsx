@@ -83,6 +83,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Mis activos
               </Link>
             )}
+            <div
+              style={{
+                borderTop: '1px solid #2d3f55',
+                marginTop: '8px',
+                paddingTop: '8px',
+              }}
+            >
+              <Link href="/help" style={navLinkStyle}>
+                Ayuda
+              </Link>
+            </div>
           </nav>
 
           {/* Usuario y cierre de sesión */}
