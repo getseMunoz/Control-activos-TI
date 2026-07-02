@@ -26,33 +26,33 @@ cd ciprijal-activos-ti
 npm install
 
 # 3. Configurar variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tus credenciales locales
+cp .env.example .env
+# Editar .env con tus credenciales locales
 ```
 
 ---
 
 ## Configuración del entorno
 
-Copia `.env.example` como `.env.local` y completa los valores:
+Copia `.env.example` como `.env` y completa los valores:
 
 ```env
 # Base de datos PostgreSQL local
 DATABASE_URL="postgresql://postgres:tu_contraseña@localhost:5432/ciprijal_activos"
 
-# NextAuth.js — genera con: openssl rand -base64 32
-NEXTAUTH_SECRET="secreto-de-al-menos-32-caracteres"
-NEXTAUTH_URL="http://localhost:3000"
+# NextAuth.js v5 — genera con: openssl rand -base64 32
+# v5 usa AUTH_SECRET / AUTH_URL (acepta NEXTAUTH_SECRET / NEXTAUTH_URL por compatibilidad)
+AUTH_SECRET="secreto-de-al-menos-32-caracteres"
+AUTH_URL="http://localhost:3000"
 
-# Email SMTP (opcional en desarrollo — solo necesario para alertas)
-SMTP_HOST="smtp.ejemplo.com"
-SMTP_PORT="587"
-SMTP_USER="correo@dominio.com"
-SMTP_PASS="contraseña"
-SMTP_FROM="CIPRIJAL TI <notificaciones@ciprijal.com>"
+# Seed — usuario administrador inicial
+SEED_ADMIN_EMAIL="admin@example.com"
+SEED_ADMIN_PASSWORD="ChangeMe123!"
 ```
 
-> **Nunca comitear `.env.local` al repositorio.** El `.gitignore` ya lo excluye.
+> **Nunca comitear `.env` al repositorio.** El `.gitignore` ya lo excluye.
+>
+> Las variables SMTP y STORAGE_PATH están reservadas para sprints futuros y no tienen implementación en v1.0.
 
 ---
 
@@ -84,6 +84,9 @@ npm run db:migrate
 
 # Aplicar migraciones pendientes en producción (sin crear nuevas)
 npm run db:migrate:deploy
+
+# Sembrar usuario administrador inicial (requiere SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD en .env)
+npm run db:seed
 
 # Abrir UI visual de la base de datos
 npm run db:studio
@@ -133,16 +136,16 @@ ciprijal-activos-ti/
 │   │   ├── (auth)/login/      → Página pública de login
 │   │   ├── (dashboard)/       → Rutas protegidas (requieren sesión)
 │   │   │   ├── layout.tsx     → Layout con sidebar y verificación de sesión
-│   │   │   ├── dashboard/     → Panel principal con KPIs
+│   │   │   ├── dashboard/     → Panel principal con KPIs y alertas operativas
 │   │   │   ├── assets/        → Inventario de activos
-│   │   │   ├── assignments/   → Asignaciones y actas
-│   │   │   ├── incidents/     → Incidencias
-│   │   │   ├── maintenance/   → Órdenes de mantenimiento
-│   │   │   ├── reports/       → Reportes exportables
-│   │   │   ├── alerts/        → Panel de alertas
-│   │   │   ├── audit/         → Log de auditoría (solo admin_ti)
-│   │   │   ├── admin/         → Administración (solo admin_ti)
-│   │   │   └── profile/       → Perfil del usuario
+│   │   │   │   ├── [id]/incidents/    → Incidencias del activo
+│   │   │   │   ├── [id]/maintenance/  → Órdenes de mantenimiento del activo
+│   │   │   │   └── [id]/expenses/     → Gastos del activo
+│   │   │   ├── assignments/   → Asignaciones, responsivas y devoluciones
+│   │   │   ├── reports/       → Reportes operativos
+│   │   │   ├── admin/         → Administración: usuarios, ubicaciones, tipos de activo
+│   │   │   ├── my-assets/     → Portal usuario final
+│   │   │   └── help/          → Guía rápida interna
 │   │   ├── api/               → Route Handlers (endpoints HTTP)
 │   │   │   └── auth/[...nextauth]/route.ts
 │   │   ├── layout.tsx         → Layout raíz (HTML, fuentes, metadatos)
@@ -281,19 +284,46 @@ Un PR con CI fallido no debe mergearse.
 
 ---
 
+## Funcionalidades implementadas (v1.0)
+
+- Autenticación por credenciales con NextAuth.js v5
+- Dos roles: `admin_ti` (acceso total) y `usuario_final` (portal propio)
+- Gestión de usuarios (crear, editar, activar/desactivar)
+- Catálogos: tipos de activo y ubicaciones
+- Registro de activos con número de serie obligatorio y soft delete
+- Asignaciones de activos a usuarios
+- Firma digital de entrega en responsiva imprimible
+- Registro de devoluciones con firma digital
+- Responsiva de devolución imprimible con folio
+- Historial completo por activo (asignaciones, incidencias, mantenimiento, gastos)
+- Incidencias por activo (creación, seguimiento, resolución)
+- Órdenes de mantenimiento preventivo y correctivo
+- Registro de gastos por activo
+- Dashboard con contadores y alertas operativas
+- Reportes: distribución de activos, top gastos, incidencias y mantenimiento abiertos
+- Exportación CSV de activos y asignaciones (con filtros activos)
+- Portal de usuario final (`/my-assets`)
+- Guía rápida interna (`/help`)
+- Branding visual básico
+
 ## Módulos del sistema
 
-| Módulo | Rutas | Roles |
+| Módulo | Rutas principales | Roles |
 |---|---|---|
-| Inventario | `/assets`, `/assets/new`, `/assets/[id]` | admin_ti |
-| Asignaciones | `/assignments` | admin_ti |
-| Incidencias | `/incidents` | admin_ti + usuario_final (propias) |
-| Mantenimiento | `/maintenance` | admin_ti |
+| Dashboard y alertas | `/dashboard` | admin_ti |
+| Inventario de activos | `/assets`, `/assets/new`, `/assets/[id]`, `/assets/[id]/edit` | admin_ti |
+| Exportación CSV activos | `/assets/export` | admin_ti |
+| Asignaciones | `/assignments`, `/assignments/new`, `/assignments/[id]/return` | admin_ti |
+| Responsiva de entrega | `/assignments/[id]/receipt` | admin_ti + usuario_final (propias) |
+| Responsiva de devolución | `/assignments/[id]/return-receipt` | admin_ti + usuario_final (propias) |
+| Exportación CSV asignaciones | `/assignments/export` | admin_ti |
+| Incidencias | `/assets/[id]/incidents`, `/assets/[id]/incidents/new` | admin_ti (+ usuario_final via portal) |
+| Mantenimiento | `/assets/[id]/maintenance`, `/assets/[id]/maintenance/new` | admin_ti |
+| Gastos | `/assets/[id]/expenses/new` | admin_ti |
 | Reportes | `/reports` | admin_ti |
-| Alertas | `/alerts` | admin_ti |
-| Auditoría | `/audit` | admin_ti |
-| Administración | `/admin/users`, `/admin/settings` | admin_ti |
-| Perfil | `/profile` | todos |
+| Administración | `/admin/users`, `/admin/locations`, `/admin/asset-types` | admin_ti |
+| Portal usuario final | `/my-assets`, `/my-assets/[assetId]/incidents/new` | usuario_final |
+| Guía rápida | `/help` | todos |
 
 ---
 
@@ -304,6 +334,18 @@ Sistema de uso interno. Acceso restringido al personal autorizado.
 
 ---
 
+## Estado del proyecto
+
+| Aspecto | Estado |
+|---|---|
+| Funcionalidades core v1.0 | Implementadas |
+| Tests automatizados | Pendiente |
+| Despliegue en Railway | Pendiente |
+| Dominio y HTTPS | Pendiente |
+| Base de datos administrada (Railway/Supabase) | Pendiente |
+| Respaldo automático | Pendiente |
+| Monitoreo/alertas de producción | Pendiente |
+
 ## Documentación técnica
 
 | Documento | Contenido |
@@ -312,8 +354,12 @@ Sistema de uso interno. Acceso restringido al personal autorizado.
 | [ESPECIFICACION_FUNCIONAL.md](./ESPECIFICACION_FUNCIONAL.md) | Módulos, flujos, casos de uso |
 | [ESPECIFICACION_TECNICA.md](./ESPECIFICACION_TECNICA.md) | Stack, seguridad, performance, API |
 | [MODELO_BASE_DATOS.md](./MODELO_BASE_DATOS.md) | Tablas, relaciones, enums, índices |
+| [DISEÑO_BASE_DATOS.md](./DISEÑO_BASE_DATOS.md) | Diseño conceptual de la base de datos |
 | [REGLAS_NEGOCIO.md](./REGLAS_NEGOCIO.md) | Reglas con IDs únicos (RN-ACT-001, etc.) |
 | [PERMISOS.md](./PERMISOS.md) | Matriz de permisos por rol |
-| [CASOS_USO.md](./CASOS_USO.md) | 24 casos de uso detallados |
+| [CASOS_USO.md](./CASOS_USO.md) | Casos de uso detallados |
 | [DECISIONES_TECNICAS.md](./DECISIONES_TECNICAS.md) | Por qué se eligió cada tecnología |
 | [PLAN_DESARROLLO.md](./PLAN_DESARROLLO.md) | Fases, sprints, criterios de aceptación |
+| [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) | Backlog de producto |
+| [ROADMAP.md](./ROADMAP.md) | Hoja de ruta |
+| [FILOSOFIA_PROYECTO.md](./FILOSOFIA_PROYECTO.md) | Principios y filosofía del proyecto |
