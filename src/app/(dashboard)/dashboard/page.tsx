@@ -233,7 +233,7 @@ export default async function DashboardPage() {
           Bienvenido, {session?.user?.name ?? session?.user?.email}
         </h1>
         <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0' }}>
-          Panel de control — CIPRIJAL Gestión de Activos TI
+          Resumen operativo de activos TI de CIPRIJAL
         </p>
       </div>
 

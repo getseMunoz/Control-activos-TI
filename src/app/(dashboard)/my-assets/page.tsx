@@ -68,9 +68,11 @@ export default async function MyAssetsPage() {
     <div style={{ padding: '32px', maxWidth: '960px' }}>
       {/* Encabezado */}
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 4px' }}>Mis activos</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 4px' }}>
+          Portal de activos TI
+        </h1>
         <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
-          Consulta los equipos que tienes asignados y reporta fallas.
+          Consulta tus equipos asignados, responsivas y reportes.
         </p>
       </div>
 

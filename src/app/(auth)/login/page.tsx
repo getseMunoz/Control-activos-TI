@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { BrandLogo } from '@/components/layout/BrandLogo'
 import { LoginForm } from './LoginForm'
 
 export const metadata: Metadata = {
@@ -26,28 +27,24 @@ export default function LoginPage() {
           width: '100%',
         }}
       >
-        {/* Logotipo */}
+        {/* Branding */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+            <BrandLogo showSubtitle variant="light" />
+          </div>
+          <p
             style={{
-              width: '48px',
-              height: '48px',
-              background: '#2d6a4f',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#1a2332',
+              margin: '0 0 6px 0',
             }}
           >
-            <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '20px' }}>C</span>
-          </div>
-          <h1
-            style={{ fontSize: '20px', fontWeight: '600', color: '#1a2332', marginBottom: '4px' }}
-          >
-            CIPRIJAL
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Gestión de Activos TI</p>
+            Sistema de Gestión de Activos TI
+          </p>
+          <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
+            Acceso interno para administración y consulta de equipos.
+          </p>
         </div>
 
         <LoginForm />

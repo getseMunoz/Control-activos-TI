@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { auth, signOut } from '@/lib/auth'
+import { BrandLogo } from '@/components/layout/BrandLogo'
 
 const navLinkStyle = {
   display: 'block',
@@ -35,10 +36,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }}
         >
           {/* Marca */}
-          <div
-            style={{ color: '#e2e8f0', fontWeight: '600', fontSize: '14px', marginBottom: '32px' }}
-          >
-            CIPRIJAL Activos TI
+          <div style={{ marginBottom: '32px' }}>
+            <BrandLogo showSubtitle variant="dark" />
           </div>
 
           {/* Navegación */}
