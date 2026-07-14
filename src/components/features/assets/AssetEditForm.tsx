@@ -119,6 +119,44 @@ export function AssetEditForm({ asset, assetTypes, locations }: Props) {
         </div>
       </fieldset>
 
+      {/* Identificadores adicionales */}
+      <fieldset className="space-y-4">
+        <legend className="text-foreground mb-2 text-sm font-semibold">
+          Identificadores adicionales (opcionales)
+        </legend>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="companyAssetNumber">N.º de activo CIPRIJAL</Label>
+            <Input
+              id="companyAssetNumber"
+              name="companyAssetNumber"
+              autoComplete="off"
+              defaultValue={asset.companyAssetNumber ?? ''}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="inventoryTag">Etiqueta de inventario</Label>
+            <Input
+              id="inventoryTag"
+              name="inventoryTag"
+              autoComplete="off"
+              defaultValue={asset.inventoryTag ?? ''}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="companyModel">Modelo interno / configuración</Label>
+          <Input
+            id="companyModel"
+            name="companyModel"
+            autoComplete="off"
+            defaultValue={asset.companyModel ?? ''}
+          />
+        </div>
+      </fieldset>
+
       {/* Ubicación y estado */}
       <fieldset className="space-y-4">
         <legend className="text-foreground mb-2 text-sm font-semibold">Ubicación y estado</legend>

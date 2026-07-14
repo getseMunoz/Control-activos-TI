@@ -10,7 +10,21 @@
       "Bash(npm install *)",
       "Bash(npm ls *)",
       "Bash(npx prettier *)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:test@localhost:5432/ciprijal_test\" npx prisma *)"
+      "Bash(DATABASE_URL=\"postgresql://postgres:test@localhost:5432/ciprijal_test\" npx prisma *)",
+      "Bash(pg_isready)",
+      "Bash(psql --version)",
+      "Bash(psql -U postgres -c \"\\\\l\")",
+      "Bash(psql -c \"\\\\l\")",
+      "Bash(psql postgres *)",
+      "Bash(createdb ciprijal_activos)",
+      "Bash(psql ciprijal_activos *)",
+      "Bash(mkdir -p /Users/angelicagetsemanimunozjimenez/Documents/ciprijal-activos-ti/src/app/\\\\\\(dashboard\\\\\\)/admin/locations/\\\\[id\\\\]/edit)",
+      "Bash(mkdir -p /Users/angelicagetsemanimunozjimenez/Documents/ciprijal-activos-ti/src/app/\\\\\\(dashboard\\\\\\)/admin/asset-types/\\\\[id\\\\]/edit)",
+      "Bash(node *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(mkdir -p /Users/angelicagetsemanimunozjimenez/Documents/ciprijal-activos-ti/src/app/\\\\\\(dashboard\\\\\\)/assets/\\\\[id\\\\]/credentials/new)",
+      "Bash(mkdir -p /Users/angelicagetsemanimunozjimenez/Documents/ciprijal-activos-ti/src/app/\\\\\\(dashboard\\\\\\)/assets/\\\\[id\\\\]/credentials/\\\\[credentialId\\\\]/edit)",
+      "Bash(git *)"
     ]
   }
 }

@@ -87,6 +87,44 @@ export function AssetCreateForm({ assetTypes, locations }: Props) {
         </div>
       </fieldset>
 
+      {/* Identificadores adicionales */}
+      <fieldset className="space-y-4">
+        <legend className="text-foreground mb-2 text-sm font-semibold">
+          Identificadores adicionales (opcionales)
+        </legend>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="companyAssetNumber">N.º de activo CIPRIJAL</Label>
+            <Input
+              id="companyAssetNumber"
+              name="companyAssetNumber"
+              autoComplete="off"
+              placeholder="Ej: CIPRI-2024-001"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="inventoryTag">Etiqueta de inventario</Label>
+            <Input
+              id="inventoryTag"
+              name="inventoryTag"
+              autoComplete="off"
+              placeholder="Ej: código de barras o QR físico"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="companyModel">Modelo interno / configuración</Label>
+          <Input
+            id="companyModel"
+            name="companyModel"
+            autoComplete="off"
+            placeholder="Ej: Laptop estándar 16GB — versión corporativa"
+          />
+        </div>
+      </fieldset>
+
       {/* Ubicación */}
       <fieldset className="space-y-4">
         <legend className="text-foreground mb-2 text-sm font-semibold">Ubicación</legend>

@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { auth } from '@/lib/auth'
 import { getAssetDetailById } from '@/server/queries/assets.queries'
+import { getCredentialsByAssetId } from '@/server/queries/credentials.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CredentialsPanel } from '@/components/features/assets/CredentialsPanel'
 
 const STATUS_LABELS: Record<string, string> = {
   in_storage: 'En almacén',
@@ -137,9 +140,12 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function AssetDetailPage({ params }: Props) {
   const { id } = await params
-  const asset = await getAssetDetailById(id)
+  const [asset, session] = await Promise.all([getAssetDetailById(id), auth()])
 
   if (!asset) notFound()
+
+  const isAdmin = session?.user?.role === 'admin_ti'
+  const credentials = isAdmin ? await getCredentialsByAssetId(id) : []
 
   const activeAssignment = asset.assignments.find((a) => a.returnedAt === null) ?? null
   const canAssign = asset.status === 'in_storage' && asset.deletedAt === null
@@ -242,6 +248,9 @@ export default async function AssetDetailPage({ params }: Props) {
             ['Modelo', asset.model],
             ['Número de serie', asset.serialNumber],
             ['Número de parte', asset.partNumber],
+            ['N.º activo CIPRIJAL', asset.companyAssetNumber],
+            ['Modelo interno', asset.companyModel],
+            ['Etiqueta inventario', asset.inventoryTag],
             ['Ubicación actual', asset.location?.name],
             ['Fecha de compra', fmt(asset.purchaseDate)],
             [
@@ -754,6 +763,34 @@ export default async function AssetDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Credenciales del activo — solo admin_ti */}
+      {isAdmin && (
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              marginBottom: '14px',
+            }}
+          >
+            <div>
+              <p style={{ ...sectionTitle, marginBottom: '4px' }}>
+                Credenciales del activo ({credentials.length})
+              </p>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                Acceso exclusivo para Administradores TI.
+              </p>
+            </div>
+          </div>
+          <CredentialsPanel
+            assetId={asset.id}
+            credentials={credentials}
+            isArchived={asset.deletedAt !== null}
+          />
+        </div>
+      )}
 
       {/* Mantenimiento del activo */}
       <div style={cardStyle}>

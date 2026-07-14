@@ -95,17 +95,30 @@ export default async function LocationsPage() {
                   {formatDate(loc.createdAt)}
                 </TableCell>
                 <TableCell>
-                  <Link
-                    href={`/admin/locations/${loc.id}/edit`}
-                    style={{
-                      fontSize: '13px',
-                      color: '#2d6a4f',
-                      textDecoration: 'none',
-                      fontWeight: '500',
-                    }}
-                  >
-                    Editar
-                  </Link>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <Link
+                      href={`/admin/locations/${loc.id}`}
+                      style={{
+                        fontSize: '13px',
+                        color: '#3b82f6',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                      }}
+                    >
+                      Ver detalle
+                    </Link>
+                    <Link
+                      href={`/admin/locations/${loc.id}/edit`}
+                      style={{
+                        fontSize: '13px',
+                        color: '#2d6a4f',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                      }}
+                    >
+                      Editar
+                    </Link>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
