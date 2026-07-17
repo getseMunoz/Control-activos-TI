@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getAssetDetailById } from '@/server/queries/assets.queries'
 import { getCredentialsByAssetId } from '@/server/queries/credentials.queries'
+import { getTechnicalInfoByAssetId } from '@/server/queries/technical-info.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CredentialsPanel } from '@/components/features/assets/CredentialsPanel'
@@ -145,7 +146,9 @@ export default async function AssetDetailPage({ params }: Props) {
   if (!asset) notFound()
 
   const isAdmin = session?.user?.role === 'admin_ti'
-  const credentials = isAdmin ? await getCredentialsByAssetId(id) : []
+  const [credentials, technicalInfo] = isAdmin
+    ? await Promise.all([getCredentialsByAssetId(id), getTechnicalInfoByAssetId(id)])
+    : [[], null]
 
   const activeAssignment = asset.assignments.find((a) => a.returnedAt === null) ?? null
   const canAssign = asset.status === 'in_storage' && asset.deletedAt === null
@@ -764,6 +767,85 @@ export default async function AssetDetailPage({ params }: Props) {
         )}
       </div>
 
+      {/* Información técnica — solo admin_ti */}
+      {isAdmin && (
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              marginBottom: '14px',
+            }}
+          >
+            <div>
+              <p style={{ ...sectionTitle, marginBottom: '4px' }}>Información técnica</p>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                Visible solo para Administradores TI. No se incluye en responsivas ni exportaciones.
+              </p>
+            </div>
+            {!asset.deletedAt && (
+              <Link
+                href={`/assets/${asset.id}/technical-info/edit`}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                {technicalInfo ? 'Editar' : 'Agregar info técnica'}
+              </Link>
+            )}
+          </div>
+
+          {technicalInfo ? (
+            <div>
+              {[
+                ['Hostname', technicalInfo.hostname],
+                ['Dirección IP local', technicalInfo.ipAddress],
+                ['IP pública', technicalInfo.publicIpAddress],
+                ['MAC ETH0 (cable)', technicalInfo.macAddressEth0],
+                ['MAC Wi-Fi', technicalInfo.macAddressWifi],
+                ['Sistema operativo', technicalInfo.operatingSystem],
+                ['Versión de Office', technicalInfo.officeVersion],
+                ['Versión de firmware', technicalInfo.firmwareVersion],
+                ['Número de modelo', technicalInfo.modelNumber],
+                ['Orden de compra', technicalInfo.orderNumber],
+                ['BYOD', technicalInfo.byod ? 'Sí (equipo del empleado)' : 'No'],
+                ['Prestable', technicalInfo.requestable ? 'Sí' : 'No'],
+              ].map(([label, value]) => (
+                <div key={label as string} style={rowStyle}>
+                  <span style={labelStyle}>{label}</span>
+                  <span style={valueStyle}>{value ?? '—'}</span>
+                </div>
+              ))}
+              {technicalInfo.additionalNotes && (
+                <div
+                  style={{ ...rowStyle, borderBottom: 'none', flexDirection: 'column', gap: '4px' }}
+                >
+                  <span style={labelStyle}>Notas técnicas</span>
+                  <span style={{ ...valueStyle, whiteSpace: 'pre-line', color: '#475569' }}>
+                    {technicalInfo.additionalNotes}
+                  </span>
+                </div>
+              )}
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '12px', marginBottom: 0 }}>
+                Actualizado:{' '}
+                {technicalInfo.updatedByUser
+                  ? `${technicalInfo.updatedByUser.firstName} ${technicalInfo.updatedByUser.lastName} · `
+                  : ''}
+                {fmt(technicalInfo.updatedAt, true)}
+              </p>
+            </div>
+          ) : (
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+              Sin información técnica registrada.{' '}
+              {!asset.deletedAt && (
+                <Link href={`/assets/${asset.id}/technical-info/edit`} style={{ color: '#3b82f6' }}>
+                  Agregar ahora
+                </Link>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Credenciales del activo — solo admin_ti */}
       {isAdmin && (
         <div style={cardStyle}>
@@ -780,7 +862,8 @@ export default async function AssetDetailPage({ params }: Props) {
                 Credenciales del activo ({credentials.length})
               </p>
               <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
-                Acceso exclusivo para Administradores TI.
+                Usuarios de acceso, contraseñas, SSID Wi-Fi, credenciales originales, panel de
+                módem/router, acceso administrador. Solo para Administradores TI.
               </p>
             </div>
           </div>

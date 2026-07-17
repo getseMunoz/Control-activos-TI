@@ -44,7 +44,8 @@ export default function NewCredentialPage() {
           color: '#92400e',
         }}
       >
-        No guardar contraseñas personales. Solo credenciales de servicio o cuenta de sistema.
+        Información visible solo para el equipo de Sistemas. No compartir ni exportar. No guardar
+        contraseñas personales de empleados.
       </div>
 
       <form action={action} className="space-y-5">
@@ -57,20 +58,26 @@ export default function NewCredentialPage() {
             name="label"
             required
             autoComplete="off"
-            placeholder="Ej: Cuenta Windows, Panel de administración, Acceso BIOS"
+            placeholder="Ej: Acceso administrador, Wi-Fi, Credenciales originales, Panel del módem"
           />
           <p className="text-muted-foreground text-xs">
-            Descripción breve que identifica para qué sirve esta credencial.
+            Identifica el tipo de acceso: cuenta de sistema, red Wi-Fi, panel de administración,
+            credenciales de fábrica, etc.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="username">Usuario</Label>
-            <Input id="username" name="username" autoComplete="off" placeholder="Opcional" />
+            <Label htmlFor="username">Usuario / SSID</Label>
+            <Input
+              id="username"
+              name="username"
+              autoComplete="off"
+              placeholder="Ej: admin, usuario original, nombre de red SSID"
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password">Contraseña / Clave Wi-Fi</Label>
             <Input
               id="password"
               name="password"
@@ -82,23 +89,23 @@ export default function NewCredentialPage() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="accessUrl">URL de acceso</Label>
+          <Label htmlFor="accessUrl">URL / IP de acceso</Label>
           <Input
             id="accessUrl"
             name="accessUrl"
             type="url"
             autoComplete="off"
-            placeholder="https://… (opcional)"
+            placeholder="Ej: http://192.168.1.1 o IP de administración"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="notes">Notas</Label>
+          <Label htmlFor="notes">Notas internas</Label>
           <textarea
             id="notes"
             name="notes"
             className={textareaClass}
-            placeholder="Instrucciones adicionales o contexto"
+            placeholder="Notas internas del área de Sistemas"
           />
         </div>
 

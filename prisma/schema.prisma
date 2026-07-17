@@ -191,6 +191,8 @@ model User {
   credentialsCreated   AssetCredential[]     @relation("CredentialCreatedBy")
   credentialsUpdated   AssetCredential[]     @relation("CredentialUpdatedBy")
   credentialsDeleted   AssetCredential[]     @relation("CredentialDeletedBy")
+  techInfoCreated      AssetTechnicalInfo[]  @relation("TechInfoCreatedBy")
+  techInfoUpdated      AssetTechnicalInfo[]  @relation("TechInfoUpdatedBy")
 
   @@index([role])
   @@index([locationId])
@@ -249,6 +251,7 @@ model Asset {
   maintenanceOrders    MaintenanceOrder[]
   maintenanceSchedules MaintenanceSchedule[]
   credentials          AssetCredential[]
+  technicalInfo        AssetTechnicalInfo?
 
   @@index([assetTypeId])
   @@index([status])
@@ -482,6 +485,38 @@ model AssetCredential {
 
   @@index([assetId])
   @@map("asset_credentials")
+}
+
+// ── AssetTechnicalInfo ────────────────────────────────────────────────────────
+// Ficha técnica por activo: red, sistema operativo, firmware, identificadores.
+// Relación 1-to-1 con Asset (unique en assetId). Sin soft delete: se sobreescribe.
+// Acceso exclusivo de admin_ti. No contiene contraseñas (ver AssetCredential).
+model AssetTechnicalInfo {
+  id              String    @id @default(uuid())
+  assetId         String    @unique @map("asset_id")
+  hostname        String?
+  macAddressEth0  String?   @map("mac_address_eth0")
+  macAddressWifi  String?   @map("mac_address_wifi")
+  ipAddress       String?   @map("ip_address")
+  publicIpAddress String?   @map("public_ip_address")
+  operatingSystem String?   @map("operating_system")
+  officeVersion   String?   @map("office_version")
+  firmwareVersion String?   @map("firmware_version")
+  modelNumber     String?   @map("model_number")
+  byod            Boolean   @default(false)
+  requestable     Boolean   @default(false)
+  orderNumber     String?   @map("order_number")
+  additionalNotes String?   @map("additional_notes")
+  createdBy       String    @map("created_by")
+  updatedBy       String?   @map("updated_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  asset         Asset @relation(fields: [assetId], references: [id])
+  createdByUser User  @relation("TechInfoCreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User? @relation("TechInfoUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("asset_technical_info")
 }
 
 // ── AuditLog ──────────────────────────────────────────────────────────────────
