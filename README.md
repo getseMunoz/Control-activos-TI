@@ -253,14 +253,13 @@ if (resource.userId !== session.user.id) throw new Error('Prohibido')
 
 ### Ramas
 
+Actualmente el repositorio utiliza una sola rama principal:
+
 ```
-main        → Producción. Solo acepta merges desde release/*
-develop     → Integración. Base para features.
-feature/*   → Nueva funcionalidad (ej: feature/123-registro-activos)
-bugfix/*    → Corrección de bug
-hotfix/*    → Corrección urgente que va directo a main
-release/*   → Preparación de release
+main → Rama principal del proyecto. Contiene la versión funcional y documentada del sistema.
 ```
+
+Si CIPRIJAL decide continuar el desarrollo del sistema, podrán crearse ramas adicionales de acuerdo con las necesidades del equipo.
 
 ### Commits (Conventional Commits)
 
