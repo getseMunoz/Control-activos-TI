@@ -52,7 +52,7 @@ SEED_ADMIN_PASSWORD="ChangeMe123!"
 
 > **Nunca comitear `.env` al repositorio.** El `.gitignore` ya lo excluye.
 >
-> Las variables SMTP y STORAGE_PATH están reservadas para sprints futuros y no tienen implementación en v1.0.
+> Las variables SMTP y STORAGE_PATH están reservadas únicamente para posibles ampliaciones posteriores y no forman parte del alcance funcional de la residencia.
 
 ---
 
