@@ -261,13 +261,16 @@ main → Rama principal del proyecto. Contiene la versión funcional y documenta
 
 Si CIPRIJAL decide continuar el desarrollo del sistema, podrán crearse ramas adicionales de acuerdo con las necesidades del equipo.
 
-### Commits (Conventional Commits)
+### Mensajes de commit
+
+Durante el desarrollo se utilizaron mensajes descriptivos para identificar los cambios realizados en cada avance. En algunos casos se emplearon prefijos como `feat:`, `docs:` o `chore:`, mientras que en otros se utilizaron mensajes directos en español.
 
 ```
-feat(assets): add serial number validation on create
-fix(auth): prevent redirect loop on session expiry
-test(assignments): add integration test for digital signature
-chore(deps): update Prisma to 6.x
+agregar dashboard general
+implementar incidencias por activo
+feat: agregar firma digital en asignaciones
+docs: actualizar documentacion tecnica
+agregar informacion tecnica de activos
 ```
 
 ### CI antes de hacer merge
