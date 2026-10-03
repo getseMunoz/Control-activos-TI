@@ -336,15 +336,24 @@ Sistema de uso interno. Acceso restringido al personal autorizado.
 
 ## Estado del proyecto
 
+El alcance correspondiente a la residencia profesional quedó concluido con el desarrollo, validación y documentación de una versión funcional del sistema. Las actividades de publicación e infraestructura productiva no forman parte del alcance de la residente y, en caso de realizarse, corresponden a decisiones posteriores de CIPRIJAL.
+
 | Aspecto | Estado |
 |---|---|
-| Funcionalidades core v1.0 | Implementadas |
-| Tests automatizados | Pendiente |
-| Despliegue en Railway | Pendiente |
-| Dominio y HTTPS | Pendiente |
-| Base de datos administrada (Railway/Supabase) | Pendiente |
-| Respaldo automático | Pendiente |
-| Monitoreo/alertas de producción | Pendiente |
+| Funcionalidades principales del sistema v1.0 | Completadas |
+| Autenticación y control de acceso por roles | Completado |
+| Gestión de usuarios, activos y ubicaciones | Completado |
+| Asignaciones, devoluciones y responsivas | Completado |
+| Incidencias, mantenimiento y gastos | Completado |
+| Dashboard, reportes y exportaciones | Completado |
+| Portal de usuario final | Completado |
+| Pruebas funcionales y validaciones técnicas | Completadas |
+| Documentación técnica y manual de usuario | Completados |
+| Despliegue en infraestructura productiva | Fuera del alcance de la residencia |
+| Dominio y HTTPS | Fuera del alcance de la residencia |
+| Base de datos administrada en la nube | Fuera del alcance de la residencia |
+| Respaldo automático y monitoreo de producción | Fuera del alcance de la residencia |
+| Suite adicional de tests automatizados | Mejora opcional posterior |
 
 ## Documentación técnica
 
