@@ -13,19 +13,17 @@ import type { AssignmentDetail } from '@/server/queries/assignments.queries'
 const textareaClass =
   'border-input bg-transparent text-foreground w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 resize-y min-h-[72px]'
 
-type Props = { assignment: AssignmentDetail }
+type Props = { assignment: AssignmentDetail; adminName: string }
 
-export function AssignmentReturnForm({ assignment }: Props) {
+export function AssignmentReturnForm({ assignment, adminName }: Props) {
   const [state, action, pending] = useActionState(returnAssignmentAction, null)
 
   const today = new Date().toISOString().split('T')[0]
   const existingNotes = typeof assignment.notes === 'string' ? assignment.notes : ''
-  const signerName = `${assignment.user.firstName} ${assignment.user.lastName}`
 
   return (
     <form action={action} className="space-y-5">
       <input type="hidden" name="id" value={assignment.id} />
-      <input type="hidden" name="returnSignedByName" value={signerName} />
 
       {/* Datos de la asignación (solo lectura) */}
       <div className="bg-muted space-y-2 rounded-lg border p-4 text-sm">
@@ -79,10 +77,13 @@ export function AssignmentReturnForm({ assignment }: Props) {
         <div>
           <p className="text-sm font-medium">Firma de devolución *</p>
           <p style={{ fontSize: '13px', color: '#475569', margin: '2px 0 0' }}>
-            Firmará devolución como: <strong>{signerName}</strong>
+            Firmará devolución como: <strong>{adminName}</strong>
           </p>
         </div>
-        <SignaturePad fieldName="returnSignatureData" label="Firma de quien devuelve el equipo" />
+        <SignaturePad
+          fieldName="returnSignatureData"
+          label="Firma del responsable de TI que recibe el equipo"
+        />
       </div>
 
       {state && !state.success && <p className="text-destructive text-sm">{state.error}</p>}

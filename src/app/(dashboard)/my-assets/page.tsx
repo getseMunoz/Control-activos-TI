@@ -144,6 +144,9 @@ export default async function MyAssetsPage() {
                         <Badge variant="outline">
                           {STATUS_LABELS[asset.status] ?? asset.status}
                         </Badge>
+                        {!a.deliverySignedAt && (
+                          <Badge variant="destructive">Pendiente de firma de recepción</Badge>
+                        )}
                       </div>
                       <p
                         style={{
@@ -158,20 +161,38 @@ export default async function MyAssetsPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
-                      <Link
-                        href={`/assignments/${a.id}/receipt`}
-                        style={{
-                          fontSize: '13px',
-                          padding: '6px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          color: '#475569',
-                          textDecoration: 'none',
-                          background: 'white',
-                        }}
-                      >
-                        Ver responsiva
-                      </Link>
+                      {a.deliverySignedAt ? (
+                        <Link
+                          href={`/assignments/${a.id}/receipt`}
+                          style={{
+                            fontSize: '13px',
+                            padding: '6px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            color: '#475569',
+                            textDecoration: 'none',
+                            background: 'white',
+                          }}
+                        >
+                          Ver responsiva
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/my-assets/assignments/${a.id}/sign`}
+                          style={{
+                            fontSize: '13px',
+                            padding: '6px 12px',
+                            border: '1px solid #0f172a',
+                            borderRadius: '6px',
+                            color: 'white',
+                            textDecoration: 'none',
+                            background: '#0f172a',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Firmar recepción
+                        </Link>
+                      )}
                       <Link
                         href={`/my-assets/${asset.id}/incidents/new`}
                         style={{
@@ -205,7 +226,10 @@ export default async function MyAssetsPage() {
                       ['Número de serie', asset.serialNumber],
                       ['Ubicación', asset.location?.name],
                       ['Asignado el', fmt(a.assignedAt)],
-                      ['Firma de recepción', a.deliverySignedAt ? 'Registrada' : 'Sin firma'],
+                      [
+                        'Firma de recepción',
+                        a.deliverySignedAt ? 'Firma registrada' : 'Pendiente de firma de recepción',
+                      ],
                     ].map(([label, value]) =>
                       value ? (
                         <div key={label as string}>

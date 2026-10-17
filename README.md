@@ -1,6 +1,6 @@
 # CIPRIJAL — Sistema de Gestión de Activos TI
 
-Sistema empresarial para el control completo del hardware tecnológico de CIPRIJAL. Registra, asigna, mantiene y da de baja equipos con número de serie obligatorio, firma digital de actas de resguardo, gestión de incidencias y trazabilidad total.
+Sistema empresarial para el control completo del hardware tecnológico de CIPRIJAL. Registra, asigna, mantiene y da de baja equipos con número de serie obligatorio, firma digital de responsivas, gestión de incidencias y trazabilidad total.
 
 ---
 
@@ -136,7 +136,7 @@ ciprijal-activos-ti/
 │   │   ├── (auth)/login/      → Página pública de login
 │   │   ├── (dashboard)/       → Rutas protegidas (requieren sesión)
 │   │   │   ├── layout.tsx     → Layout con sidebar y verificación de sesión
-│   │   │   ├── dashboard/     → Panel principal con KPIs y alertas operativas
+│   │   │   ├── dashboard/     → Panel principal con contadores operativos
 │   │   │   ├── assets/        → Inventario de activos
 │   │   │   │   ├── [id]/incidents/    → Incidencias del activo
 │   │   │   │   ├── [id]/maintenance/  → Órdenes de mantenimiento del activo
@@ -183,8 +183,7 @@ ciprijal-activos-ti/
 ├── next.config.ts             → Config de Next.js (headers de seguridad)
 ├── tsconfig.json              → TypeScript strict mode
 ├── eslint.config.mjs          → ESLint (flat config)
-├── .prettierrc                → Prettier
-└── prisma/schema.prisma       → Schema de la base de datos
+└── .prettierrc                → Prettier
 ```
 
 ---
@@ -212,11 +211,11 @@ Server Component (página)
 Usa siempre el alias `@/` en lugar de rutas relativas:
 
 ```typescript
-// ✅ Correcto
+// Correcto
 import { prisma } from '@/lib/prisma'
 import { cn } from '@/lib/utils'
 
-// ❌ Evitar
+// Evitar
 import { prisma } from '../../../lib/prisma'
 ```
 
@@ -291,26 +290,47 @@ Un PR con CI fallido no debe mergearse.
 - Gestión de usuarios (crear, editar, activar/desactivar)
 - Catálogos: tipos de activo y ubicaciones
 - Registro de activos con número de serie obligatorio y soft delete
-- Asignaciones de activos a usuarios
-- Firma digital de entrega en responsiva imprimible
-- Registro de devoluciones con firma digital
-- Responsiva de devolución imprimible con folio
+- Asignaciones de activos a usuarios (el Administrador TI crea la asignación sin firma)
+- Firma digital de recepción por el propio Usuario Final desde `/my-assets` (dibujo en canvas, guardado como PNG Data URL), una vez que el equipo le fue asignado
+- Registro de devoluciones firmado por el Administrador TI que recibe físicamente el equipo (nombre resuelto en servidor desde su propia sesión)
+- Responsiva de entrega y de devolución: páginas HTML imprimibles con folio (no PDF generado en servidor)
 - Historial completo por activo (asignaciones, incidencias, mantenimiento, gastos)
 - Incidencias por activo (creación, seguimiento, resolución)
 - Órdenes de mantenimiento preventivo y correctivo
 - Registro de gastos por activo
-- Dashboard con contadores y alertas operativas
+- Dashboard con contadores operativos (activos por estado/tipo, incidencias abiertas, mantenimientos activos) — no confundir con un módulo de alertas, que no está implementado (ver REGLAS_NEGOCIO.md §RN-ALT)
 - Reportes: distribución de activos, top gastos, incidencias y mantenimiento abiertos
 - Exportación CSV de activos y asignaciones (con filtros activos)
 - Portal de usuario final (`/my-assets`)
 - Guía rápida interna (`/help`)
 - Branding visual básico
 
+## Flujos principales
+
+**Asignación y firma de recepción:**
+1. El Administrador TI crea la asignación desde `/assignments/new`, **sin firma**; el activo pasa a `assigned`.
+2. El Usuario Final ve el equipo en `/my-assets` marcado "Pendiente de firma de recepción".
+3. Abre `/my-assets/assignments/[assignmentId]/sign`, revisa los datos del equipo y firma dibujando en el canvas.
+4. El sistema guarda la firma (PNG en Base64) y resuelve el nombre del firmante desde su propio registro en la base de datos — nunca desde el cliente.
+5. Puede consultar su responsiva en `/assignments/[id]/receipt`.
+
+**Devolución:**
+1. El Administrador TI abre `/assignments/[id]/return`, registra la fecha de devolución y notas opcionales.
+2. Firma como responsable de TI que recibe físicamente el equipo (mismo mecanismo de canvas).
+3. El sistema resuelve el nombre del firmante desde la sesión del propio Administrador TI, no desde el usuario que tenía el equipo asignado.
+4. El activo regresa a `in_storage`; la responsiva de devolución queda disponible en `/assignments/[id]/return-receipt`.
+
+**Reporte de falla (Usuario Final):**
+1. El Usuario Final entra a `/my-assets` y selecciona uno de sus equipos asignados.
+2. Abre `/my-assets/[assetId]/incidents/new` y describe el problema (título, descripción, prioridad).
+3. El sistema crea la incidencia en estado `open`, vinculada al activo y al usuario.
+4. El Administrador TI la gestiona desde la ficha del activo (`/assets/[id]/incidents`).
+
 ## Módulos del sistema
 
 | Módulo | Rutas principales | Roles |
 |---|---|---|
-| Dashboard y alertas | `/dashboard` | admin_ti |
+| Dashboard | `/dashboard` | admin_ti |
 | Inventario de activos | `/assets`, `/assets/new`, `/assets/[id]`, `/assets/[id]/edit` | admin_ti |
 | Exportación CSV activos | `/assets/export` | admin_ti |
 | Asignaciones | `/assignments`, `/assignments/new`, `/assignments/[id]/return` | admin_ti |
@@ -322,7 +342,7 @@ Un PR con CI fallido no debe mergearse.
 | Gastos | `/assets/[id]/expenses/new` | admin_ti |
 | Reportes | `/reports` | admin_ti |
 | Administración | `/admin/users`, `/admin/locations`, `/admin/asset-types` | admin_ti |
-| Portal usuario final | `/my-assets`, `/my-assets/[assetId]/incidents/new` | usuario_final |
+| Portal usuario final | `/my-assets`, `/my-assets/[assetId]/incidents/new`, `/my-assets/assignments/[assignmentId]/sign` | usuario_final |
 | Guía rápida | `/help` | todos |
 
 ---
@@ -351,15 +371,9 @@ Sistema de uso interno. Acceso restringido al personal autorizado.
 | Documento | Contenido |
 |---|---|
 | [ARQUITECTURA.md](./ARQUITECTURA.md) | ADRs, capas, seguridad, despliegue |
-| [ESPECIFICACION_FUNCIONAL.md](./ESPECIFICACION_FUNCIONAL.md) | Módulos, flujos, casos de uso |
-| [ESPECIFICACION_TECNICA.md](./ESPECIFICACION_TECNICA.md) | Stack, seguridad, performance, API |
 | [MODELO_BASE_DATOS.md](./MODELO_BASE_DATOS.md) | Tablas, relaciones, enums, índices |
-| [DISEÑO_BASE_DATOS.md](./DISEÑO_BASE_DATOS.md) | Diseño conceptual de la base de datos |
-| [REGLAS_NEGOCIO.md](./REGLAS_NEGOCIO.md) | Reglas con IDs únicos (RN-ACT-001, etc.) |
+| [REGLAS_NEGOCIO.md](./REGLAS_NEGOCIO.md) | Reglas de negocio con ID único (RN-ACT-*, RN-ASGN-*, etc.) |
 | [PERMISOS.md](./PERMISOS.md) | Matriz de permisos por rol |
-| [CASOS_USO.md](./CASOS_USO.md) | Casos de uso detallados |
 | [DECISIONES_TECNICAS.md](./DECISIONES_TECNICAS.md) | Por qué se eligió cada tecnología |
-| [PLAN_DESARROLLO.md](./PLAN_DESARROLLO.md) | Fases, sprints, criterios de aceptación |
-| [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) | Backlog de producto |
-| [ROADMAP.md](./ROADMAP.md) | Hoja de ruta |
-| [FILOSOFIA_PROYECTO.md](./FILOSOFIA_PROYECTO.md) | Principios y filosofía del proyecto |
+| [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) | Backlog de producto, con estado real por historia |
+| [docs/historico/PLAN_DESARROLLO.md](./docs/historico/PLAN_DESARROLLO.md) | Plan histórico de desarrollo (no refleja el estado final del sistema) |

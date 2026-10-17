@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { requireAdminTI } from '@/lib/auth'
 import { getAssignmentById } from '@/server/queries/assignments.queries'
+import { getUserById } from '@/server/queries/users.queries'
 import { AssignmentReturnForm } from '@/components/features/assignments/AssignmentReturnForm'
 import { buttonVariants } from '@/components/ui/button'
 
@@ -8,9 +10,11 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function ReturnAssignmentPage({ params }: Props) {
   const { id } = await params
-  const assignment = await getAssignmentById(id)
+  const admin = await requireAdminTI()
+  const [assignment, adminUser] = await Promise.all([getAssignmentById(id), getUserById(admin.id)])
 
   if (!assignment) notFound()
+  const adminName = adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : admin.email
 
   // Si ya fue devuelta, redirigir al listado (la acción también lo valida)
   if (assignment.returnedAt !== null) {
@@ -59,7 +63,7 @@ export default async function ReturnAssignmentPage({ params }: Props) {
           padding: '24px',
         }}
       >
-        <AssignmentReturnForm assignment={assignment} />
+        <AssignmentReturnForm assignment={assignment} adminName={adminName} />
       </div>
     </div>
   )

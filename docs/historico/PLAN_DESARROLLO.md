@@ -1,3 +1,5 @@
+> **Documento histórico de planeación.** Se conserva como registro del proceso de desarrollo y no representa necesariamente el estado final del sistema.
+
 # PLAN DE DESARROLLO
 ## Sistema de Gestión de Activos TI — CIPRIJAL
 **Versión:** 1.1  

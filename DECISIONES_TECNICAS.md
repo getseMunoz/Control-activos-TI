@@ -8,6 +8,8 @@ Este documento registra cada decisión técnica significativa tomada en el proye
 
 Las decisiones de negocio y arquitectura de alto nivel están en `ARQUITECTURA.md` (ADRs). Este documento es complementario: se enfoca en las herramientas y configuraciones concretas.
 
+**Principios que guían estas decisiones:** ante dos soluciones que resuelven el mismo problema, se prefiere siempre la más simple sobre la más compleja. El código se escribe para que otra persona lo entienda y modifique con confianza, no para impresionar — se evitan abstracciones sin un uso concreto inmediato, patrones de diseño adoptados por moda, y optimizaciones sin evidencia de un problema real. Toda dependencia o herramienta nueva debe justificarse con una razón concreta, no con popularidad.
+
 ---
 
 ## DT-001 — Next.js como framework full-stack único
@@ -43,7 +45,7 @@ Las decisiones de negocio y arquitectura de alto nivel están en `ARQUITECTURA.m
 - Usar la versión más reciente reduce el riesgo de encontrar bugs ya corregidos y aprovecha las últimas optimizaciones.
 
 **Cambio notable en Next.js 16:**
-El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proyecto usa `src/proxy.ts`. Esto está documentado en `CLAUDE.md`.
+El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proyecto usa `src/proxy.ts` (ver también `ARQUITECTURA.md` §5.1).
 
 ---
 
@@ -53,7 +55,7 @@ El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proy
 
 **Por qué:**
 - Elimina clases enteras de bugs en tiempo de compilación en lugar de en producción.
-- Prisma genera tipos automáticamente desde `schema.prisma`. Con strict mode, el compilador garantiza que el código de acceso a datos coincide exactamente con el schema.
+- Prisma genera tipos automáticamente desde `schema.prisma`. Con strict mode, el compilador verifica que el código de acceso a datos coincide con el schema.
 - Para un sistema de auditoría empresarial donde la corrección de datos es crítica, los tipos son una capa de seguridad adicional.
 
 **Alternativas descartadas:**
@@ -70,7 +72,7 @@ El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proy
 **Decisión:** PostgreSQL 15 como única base de datos.
 
 **Por qué:**
-- Los datos de activos TI son altamente relacionales: activos → asignaciones → usuarios → localidades. PostgreSQL garantiza integridad referencial nativa.
+- Los datos de activos TI son relacionales: activos → asignaciones → usuarios → localidades. PostgreSQL tiene integridad referencial nativa.
 - Soporte JSONB para el campo `specs` de activos (especificaciones técnicas variables por tipo de hardware) sin necesidad de una base de datos NoSQL separada.
 - Soporte nativo de `TIMESTAMPTZ` para fechas en UTC con zona horaria.
 - Índices parciales (usados para la restricción de asignación única activa: `WHERE returned_at IS NULL`).
@@ -273,10 +275,10 @@ npx lint-staged
 **Decisión:** No se usa Redis, BullMQ ni ninguna solución de colas en la versión 1.0.
 
 **Por qué:**
-- El volumen de CIPRIJAL no justifica la complejidad operacional. Las operaciones que típicamente van a una cola (emails, reportes) se ejecutan de forma síncrona.
-- Emails: Nodemailer en Route Handler síncrono. Para alertas puntuales (no newsletters masivos), un timeout de 5 segundos es aceptable.
-- Reportes: generación síncrona con indicador de carga en el frontend. Para el volumen esperado (hasta 50,000 activos), PDFs y Excel se generan en segundos.
-- Eliminar Redis simplifica enormemente el despliegue y el modelo mental del sistema.
+- El volumen de CIPRIJAL no justifica la complejidad operacional de una cola de trabajos.
+- **Estado actual:** no hay envío de emails ni generación de PDF/Excel implementados en v1.0 — los reportes se limitan a un panel con contadores y exportación CSV (ver MODELO_BASE_DATOS.md §6 y REGLAS_NEGOCIO.md §RN-ALT).
+- **Si se implementaran en el futuro:** emails con Nodemailer en un Route Handler síncrono sería suficiente para alertas puntuales (no newsletters masivos); reportes en PDF/Excel también podrían generarse de forma síncrona con un indicador de carga en el frontend, dado el volumen esperado (hasta 50,000 activos).
+- Eliminar Redis simplifica el despliegue y el modelo mental del sistema.
 
 **Criterio para agregar en el futuro:** Si los endpoints de generación de reportes superan consistentemente 10 segundos, o si el volumen de emails de alerta supera 100 por hora, se agrega una solución de colas. La lógica de negocio no necesita cambiar — solo el transport.
 
@@ -300,17 +302,22 @@ npx lint-staged
 
 ---
 
-## DT-015 — Soft delete universal
+## DT-015 — Soft delete selectivo (no universal)
 
-**Decisión:** Ningún registro se elimina físicamente. Todas las entidades tienen `deletedAt DateTime?` y `deletedBy String?`.
+**Decisión:** Ningún registro se elimina físicamente, pero el mecanismo exacto varía según la naturaleza de cada entidad — no es un campo `deletedAt`/`deletedBy` idéntico en todas las tablas.
+
+**Mecanismo real por tipo de entidad:**
+- **Con `deletedAt` + `deletedBy`:** `Asset`, `AssetCredential`.
+- **Solo con `deletedAt`:** `User`, `Location`.
+- **Con bandera `isActive` (sin `deletedAt`):** `AssetType`.
+- **Sin ningún mecanismo de borrado lógico — son registros históricos inmutables:** `AssetAssignment`, `AssetExpense`, `Incident`, `MaintenanceOrder`, `MaintenanceSchedule`, `AuditLog`, `AssetTechnicalInfo`.
 
 **Por qué:**
-- Los activos dados de baja siguen siendo parte del histórico de auditoría.
-- Los usuarios desactivados mantienen su historial de asignaciones e incidencias.
-- Permite recuperación de datos si se elimina algo por error.
-- La tabla `audit_logs` es el registro inmutable de acciones — el soft delete en las tablas de negocio es una capa adicional de seguridad.
+- Los activos dados de baja y los usuarios desactivados mantienen su historial de asignaciones e incidencias — por eso sí tienen `deletedAt`.
+- Las tablas de historial (asignaciones, gastos, incidencias, mantenimientos) nunca se editan ni se marcan como inactivas: son el registro permanente en sí mismo, no necesitan un segundo mecanismo de "borrado lógico" sobre algo que ya es inmutable por definición.
+- Permite recuperación de datos si se elimina algo por error, sin inflar con un campo `deletedAt` sin uso en tablas donde el concepto no aplica.
 
-**Implementación:** Todas las queries de listado incluyen `where: { deletedAt: null }`. Se crea un helper `withSoftDelete()` para estandarizar esto y evitar que se olvide el filtro.
+**Implementación:** Las queries de listado sobre entidades con `deletedAt` incluyen `where: { deletedAt: null }`. No existe un helper compartido tipo `withSoftDelete()` — el filtro se repite explícitamente en cada query donde aplica.
 
 ---
 

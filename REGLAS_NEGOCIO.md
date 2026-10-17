@@ -9,7 +9,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 ## RN-ACT — Activos (Inventario)
 
-**RN-ACT-01 (innegociable):** Solo el Administrador TI puede dar de alta, editar o dar de baja equipos. El Usuario Final tiene estrictamente prohibido registrar o modificar activos. El backend devuelve HTTP 403 independientemente de si el botón es visible en el frontend.
+**RN-ACT-01 (innegociable):** Solo el Administrador TI puede dar de alta, editar o dar de baja equipos. El Usuario Final tiene estrictamente prohibido registrar o modificar activos. El backend rechaza la operación independientemente de si el botón es visible en el frontend.
 
 **RN-ACT-02 (innegociable):** El número de serie es obligatorio para todo equipo. No existe equipo sin número de serie en la base de datos (`serial_number NOT NULL`). El frontend y el backend validan este campo antes de cualquier inserción.
 
@@ -17,15 +17,15 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ACT-04:** El código interno (formato `HW-AAAA-NNNN`) es generado automáticamente por el sistema al crear el activo. No puede ser editado manualmente por ningún usuario.
 
-**RN-ACT-05:** Los activos dados de baja nunca se eliminan físicamente de la base de datos. Se archivan con `status = decommissioned` y `deleted_at` con la fecha de baja. Todo su historial (asignaciones, mantenimientos, incidencias) se conserva íntegro.
+**RN-ACT-05:** Los activos dados de baja nunca se eliminan físicamente de la base de datos. El cambio a `status = decommissioned` y el archivado (`deleted_at`) son dos mecanismos independientes en el código actual — marcar un activo como `decommissioned` no establece `deleted_at` automáticamente. Todo su historial (asignaciones, mantenimientos, incidencias) se conserva íntegro en cualquier caso.
 
-**RN-ACT-06:** La baja de un activo la ejecuta el Administrador TI directamente, con confirmación explícita y motivo obligatorio. No existe flujo de aprobación de dos niveles.
+**RN-ACT-06:** La baja de un activo la ejecuta el Administrador TI directamente, sin flujo de aprobación de dos niveles. El campo de notas asociado es opcional en el código actual — no existe un campo de "motivo de baja" obligatorio dedicado.
 
 **RN-ACT-07:** No se puede dar de baja un activo que tiene una asignación activa (`returned_at IS NULL`). El sistema debe exigir primero la devolución formal del equipo.
 
-**RN-ACT-08:** El catálogo de tipos de hardware en v1.0 es fijo y comprende exactamente: `desktop`, `laptop`, `raspberry_pi`, `mobile_phone`, `radio`, `printer`. El tipo se almacena como enum en la base de datos.
+**RN-ACT-08:** El catálogo de tipos de hardware (`AssetType`) es una tabla administrable, no un enum fijo. El Administrador TI puede crear, editar y desactivar tipos desde la interfaz sin requerir cambios de código ni migración.
 
-**RN-ACT-09:** Cada activo registrado genera automáticamente un código QR único que codifica su código interno. El código QR se puede reimprimir en cualquier momento desde el detalle del activo.
+**RN-ACT-09 (futura):** se contempla que cada activo genere automáticamente un código QR único que codifique su código interno. El campo `qrCode` existe en el schema pero no se asigna en ningún flujo actual; no hay generación ni reimpresión de QR implementada.
 
 **RN-ACT-10:** Un activo en mantenimiento activo no puede asignarse ni darse de baja hasta que la orden de trabajo se cierre o cancele.
 
@@ -37,21 +37,23 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ASGN-02:** Solo el Administrador TI puede crear asignaciones (entregar equipos) y registrar devoluciones (cerrar asignaciones).
 
-**RN-ASGN-03:** Para asignar un activo, este debe encontrarse en estado `registered` o `in_storage`. No se puede asignar un activo en estado `in_maintenance` o `decommissioned`.
+**RN-ASGN-03:** Para asignar un activo, este debe encontrarse en estado `in_storage`. No se puede asignar un activo en estado `in_maintenance`, `assigned`, `decommissioned`, `stolen` o `lost`.
 
 **RN-ASGN-04:** Al crear una asignación, el estado del activo cambia automáticamente a `assigned`.
 
-**RN-ASGN-05:** Al registrar la devolución de un activo, se debe registrar la condición del equipo al retorno. El estado del activo regresa a `in_storage`.
+**RN-ASGN-05:** Al registrar la devolución de un activo, el estado del activo regresa a `in_storage`. No existe un campo de "condición del equipo al retorno" en el sistema actual.
 
-**RN-ASGN-06:** El acta de resguardo se genera en PDF automáticamente al crear la asignación. La asignación queda en estado "pendiente de firma" hasta que el Usuario Final la firme digitalmente.
+**RN-ASGN-06:** El Administrador TI crea la asignación **sin firma**. La responsiva de entrega es una página HTML imprimible (no se genera PDF en servidor). La asignación queda marcada como "pendiente de firma de recepción" hasta que el propio Usuario Final la firme desde su portal (`/my-assets`).
 
-**RN-ASGN-07:** La firma digital del acta consiste en: el Usuario Final acepta una casilla de confirmación, y el sistema registra la fecha/hora exacta (UTC), la dirección IP del cliente y el ID de sesión. No se usa criptografía PKI.
+**RN-ASGN-07:** La firma de recepción consiste en un dibujo gráfico capturado con canvas (mouse/touch), almacenado como imagen PNG en formato Data URL / Base64 en el campo `deliverySignatureData`. El nombre del firmante se obtiene del usuario autenticado consultado en la base de datos — nunca de un valor enviado por el cliente. No se registra IP ni ID de sesión, y no se usa criptografía PKI ni casilla de aceptación.
 
-**RN-ASGN-08:** Una vez firmada el acta, no puede modificarse ni eliminarse. Solo puede generarse una nueva si se registra una devolución y una reasignación posterior.
+**RN-ASGN-07-B:** La devolución la firma el Administrador TI que recibe físicamente el equipo, con el mismo mecanismo de canvas/PNG Base64 (campo `returnSignatureData`). El nombre del firmante se resuelve desde la sesión del Administrador TI autenticado contra la base de datos — nunca desde el nombre del usuario al que estaba asignado el equipo ni desde un valor enviado por el cliente. El campo `returnedBy` registra al Administrador TI que recibió la devolución.
+
+**RN-ASGN-08:** Una vez firmada una asignación (recepción o devolución), los campos de firma no se sobrescriben. No existe en el sistema actual un flujo de "nueva firma" sobre una asignación ya firmada.
 
 **RN-ASGN-09:** El historial completo de asignaciones de un activo es inmutable. Ningún usuario puede editar o eliminar registros históricos de asignaciones.
 
-**RN-ASGN-10:** Si se desactiva un Usuario Final que tiene asignaciones activas, el sistema muestra una alerta obligatoria al Administrador TI indicando los equipos que deben ser reasignados o devueltos.
+**RN-ASGN-10:** Si se intenta desactivar un Usuario Final que tiene asignaciones activas, el sistema **bloquea la desactivación** con un mensaje que indica el número de equipos pendientes (no una lista detallada ni un sistema de alertas dedicado). El Administrador TI debe registrar las devoluciones antes de poder desactivar al usuario.
 
 ---
 
@@ -89,7 +91,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 ## RN-INC — Incidencias
 
-**RN-INC-01 (innegociable):** Un Usuario Final solo puede reportar incidencias sobre equipos que tiene asignados activamente en ese momento (`returned_at IS NULL`). El backend valida esto y devuelve HTTP 403 si el activo no pertenece al usuario.
+**RN-INC-01 (innegociable):** Un Usuario Final solo puede reportar incidencias sobre equipos que tiene asignados activamente en ese momento (`returned_at IS NULL`). El backend valida esto y rechaza la operación si el activo no pertenece al usuario.
 
 **RN-INC-02:** Solo el Administrador TI puede cambiar el estado de una incidencia, asignarla a una orden de mantenimiento o marcarla como resuelta/cerrada.
 
@@ -109,51 +111,57 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-MNT-01:** Solo el Administrador TI puede crear, editar y cerrar órdenes de trabajo de mantenimiento.
 
-**RN-MNT-02:** Al crear una orden de trabajo para un activo, su estado cambia automáticamente a `in_maintenance`.
+**RN-MNT-02:** Crear una orden de trabajo **no** cambia automáticamente el estado del activo a `in_maintenance` — el Administrador TI debe cambiarlo manualmente desde la edición del activo si lo desea. No hay vínculo automático entre la OT y el estado del activo en el código actual.
 
-**RN-MNT-03:** Al cerrar una orden de trabajo (estado `completed`), el estado del activo regresa a `in_storage` si no tiene asignación activa pendiente, o a `assigned` si la tenía antes del mantenimiento.
+**RN-MNT-03:** Cerrar una orden de trabajo (estado `completed`) **no** revierte automáticamente el estado del activo — no existe esa lógica en el código actual. El cambio de estado, si se requiere, lo realiza manualmente el Administrador TI.
 
-**RN-MNT-04:** Al cerrar una orden de trabajo, el resultado y la descripción del trabajo realizado son obligatorios.
+**RN-MNT-04:** Al cerrar una orden de trabajo, el resultado es obligatorio. La descripción del trabajo realizado es opcional en el sistema actual.
 
 **RN-MNT-05:** El número de OT (formato `OT-AAAA-NNNN`) es generado automáticamente por el sistema.
 
-**RN-MNT-06:** Los mantenimientos preventivos se programan con una frecuencia configurable por activo (mensual, trimestral, semestral, anual). El valor por defecto recomendado para la mayoría de los equipos es semestral (cada 6 meses).
+> Las siguientes tres reglas son especificación futura — no están implementadas en el código actual.
 
-**RN-MNT-07:** El sistema genera alertas automáticas 15 y 7 días antes de la fecha de vencimiento de un mantenimiento preventivo programado.
+**RN-MNT-06 (futura):** programar mantenimientos preventivos con una frecuencia configurable por activo (mensual, trimestral, semestral, anual). El modelo `MaintenanceSchedule` existe en el schema pero no tiene ninguna Server Action, query ni interfaz asociada.
 
-**RN-MNT-08:** Si un activo acumula 3 o más mantenimientos correctivos en un período de 6 meses, el sistema genera una alerta de "recomendación de baja" para el Administrador TI.
+**RN-MNT-07 (futura):** generar alertas automáticas 15 y 7 días antes del vencimiento de un mantenimiento preventivo programado.
+
+**RN-MNT-08 (futura):** generar una alerta de "recomendación de baja" si un activo acumula 3 o más mantenimientos correctivos en 6 meses.
 
 **RN-MNT-09:** Las órdenes de trabajo no se eliminan físicamente. Son registros históricos permanentes.
 
 ---
 
-## RN-ALT — Alertas
+## RN-ALT — Alertas — Especificación futura / no implementada actualmente
 
-**RN-ALT-01:** Las alertas de vencimiento de garantía se generan con 90, 60 y 30 días de anticipación.
+> Todo este módulo es aspiracional. No existe modelo de alertas en el schema, no hay lógica de generación de ningún tipo, y no hay envío de correo (sin SMTP configurado). La ruta `/alerts` existe como carpeta reservada sin página activa. Las reglas siguientes describen el diseño previsto, no comportamiento actual.
 
-**RN-ALT-02:** Las alertas de mantenimiento preventivo vencido se generan el mismo día del vencimiento.
+**RN-ALT-01 (futura):** alertas de vencimiento de garantía, 90, 60 y 30 días antes.
 
-**RN-ALT-03:** La alerta de empleado desactivado con equipos asignados es inmediata y se genera en el momento de la desactivación.
+**RN-ALT-02 (futura):** alerta de mantenimiento preventivo vencido, el mismo día del vencimiento.
 
-**RN-ALT-04:** La alerta de nueva incidencia reportada se genera inmediatamente al crear la incidencia.
+**RN-ALT-03 (futura):** alerta inmediata al desactivar un empleado con equipos asignados. (En el sistema actual, en su lugar, la desactivación simplemente se **bloquea** — ver RN-ASGN-10.)
 
-**RN-ALT-05:** Solo el Administrador TI puede marcar alertas como leídas, posponerlas o resolverlas.
+**RN-ALT-04 (futura):** alerta inmediata al reportarse una nueva incidencia.
 
-**RN-ALT-06:** Al posponer una alerta, la justificación es obligatoria.
+**RN-ALT-05 (futura):** solo el Administrador TI podría marcar alertas como leídas, posponerlas o resolverlas.
 
-**RN-ALT-07:** Los emails de alerta se envían al Administrador TI. Los emails de resolución de incidencia se envían al Usuario Final que la reportó.
+**RN-ALT-06 (futura):** al posponer una alerta, la justificación sería obligatoria.
+
+**RN-ALT-07 (futura):** los emails de alerta irían al Administrador TI; los de resolución de incidencia, al Usuario Final que la reportó.
 
 ---
 
-## RN-DOC — Documentos
+## RN-DOC — Documentos adjuntos — Especificación futura / no implementada actualmente
 
-**RN-DOC-01:** Los documentos adjuntos (facturas, manuales, certificados) se vinculan a un activo, asignación u orden de mantenimiento mediante los campos `entity_type` y `entity_id`.
+> El modelo `Document` existe en el schema de Prisma, pero no hay ninguna Server Action, query ni interfaz para subir, ver o eliminar documentos. Las reglas siguientes describen el diseño previsto, no comportamiento actual.
 
-**RN-DOC-02:** Solo el Administrador TI puede subir, editar o eliminar documentos.
+**RN-DOC-01 (futura):** los documentos (facturas, manuales, certificados) se vincularían a un activo, asignación u orden de mantenimiento mediante `entity_type`/`entity_id` (patrón ya presente en el schema).
 
-**RN-DOC-03:** Los documentos no se eliminan físicamente. Se marcan como inactivos.
+**RN-DOC-02 (futura):** solo el Administrador TI podría subir, editar o eliminar documentos.
 
-**RN-DOC-04:** El acta de resguardo firmada está disponible para descarga tanto para el Administrador TI como para el Usuario Final receptor del equipo.
+**RN-DOC-03 (futura):** los documentos no se eliminarían físicamente, se marcarían como inactivos (`isActive`, ya presente en el schema).
+
+**RN-DOC-04:** La responsiva de entrega firmada está disponible para consulta tanto para el Administrador TI como para el Usuario Final propietario de la asignación — esto **sí está implementado**, vía `/assignments/[id]/receipt`, y no depende del módulo de Documentos.
 
 ---
 
@@ -161,11 +169,13 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-AUD-01 (innegociable):** La tabla `audit_logs` es de solo inserción. Ningún usuario ni proceso puede modificar ni eliminar registros de auditoría.
 
-**RN-AUD-02:** Se auditan obligatoriamente: creación, modificación y baja de activos; creación y cierre de asignaciones; cambio de estado de incidencias; creación y cierre de órdenes de mantenimiento; alta, edición y desactivación de usuarios; inicio y cierre de sesión; exportaciones de reportes; firma digital de actas.
+> Las siguientes tres reglas son especificación futura: el modelo `AuditLog` existe en el schema con todos los campos necesarios, pero ningún Server Action escribe en él — la tabla está vacía en todo momento.
 
-**RN-AUD-03:** Cada registro de auditoría captura: entidad afectada, acción, valores anteriores, valores nuevos, ID y email del usuario que ejecutó la acción, IP del cliente, fecha/hora UTC exacta.
+**RN-AUD-02 (futura):** se auditaría obligatoriamente: creación, modificación y baja de activos; creación y cierre de asignaciones; cambio de estado de incidencias; creación y cierre de órdenes de mantenimiento; alta, edición y desactivación de usuarios; inicio y cierre de sesión; exportaciones de reportes; firmas.
 
-**RN-AUD-04:** Los datos del usuario en `audit_logs` se desnormalizan (se copia el email y el rol en el momento del evento). Esto garantiza que el historial se preserve aunque el usuario sea desactivado o su email cambie.
+**RN-AUD-03 (futura):** cada registro capturaría entidad afectada, acción, valores anteriores y nuevos, ID/email/rol del usuario, IP del cliente y fecha/hora UTC exacta.
+
+**RN-AUD-04 (futura):** los datos del usuario se desnormalizarían (email y rol en el momento del evento) para preservar el historial aunque el usuario sea desactivado o su email cambie.
 
 ---
 
@@ -173,7 +183,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-SEG-01 (innegociable):** Todas las rutas del sistema requieren sesión válida de NextAuth, excepto `/login`.
 
-**RN-SEG-02 (innegociable):** Un Usuario Final no puede acceder a recursos de otros usuarios. El middleware de Next.js y los Server Actions verifican la propiedad del recurso en todas las operaciones.
+**RN-SEG-02 (innegociable):** Un Usuario Final no puede acceder a recursos de otros usuarios. `src/proxy.ts` bloquea el acceso a rutas completas según el rol; la verificación de que un recurso específico (ej. una asignación) pertenece al usuario autenticado se hace de forma explícita dentro de cada Server Action o página (comparando el `id` de la sesión contra el dueño del registro) — no existe un helper `requireOwnership()` genérico en el código.
 
 **RN-SEG-03:** Los IDs expuestos en URLs y respuestas de API son siempre UUIDs. Nunca se exponen integers secuenciales (previene enumeración de recursos).
 

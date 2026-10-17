@@ -1,13 +1,12 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState } from 'react'
 import Link from 'next/link'
 import { createAssignmentAction } from '@/server/actions/assignments.actions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
-import { SignaturePad } from '@/components/features/assignments/SignaturePad'
 
 const selectClass =
   'border-input bg-background text-foreground w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50'
@@ -52,14 +51,8 @@ type Props = {
 
 export function AssignmentCreateForm({ assets, users, locations }: Props) {
   const [state, action, pending] = useActionState(createAssignmentAction, null)
-  const [signerName, setSignerName] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
-
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = users.find((u) => u.id === e.target.value)
-    setSignerName(selected ? `${selected.firstName} ${selected.lastName}` : '')
-  }
 
   return (
     <form action={action} className="space-y-5">
@@ -84,13 +77,7 @@ export function AssignmentCreateForm({ assets, users, locations }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="userId">Usuario asignado *</Label>
-        <select
-          id="userId"
-          name="userId"
-          required
-          className={selectClass}
-          onChange={handleUserChange}
-        >
+        <select id="userId" name="userId" required className={selectClass}>
           <option value="">Selecciona un usuario…</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
@@ -98,12 +85,6 @@ export function AssignmentCreateForm({ assets, users, locations }: Props) {
             </option>
           ))}
         </select>
-        {signerName && (
-          <p style={{ fontSize: '13px', color: '#475569', margin: '4px 0 0' }}>
-            Firmará como: <strong style={{ color: '#0f172a' }}>{signerName}</strong>
-          </p>
-        )}
-        <input type="hidden" name="deliverySignedByName" value={signerName} />
       </div>
 
       <div className="space-y-1.5">
@@ -141,11 +122,6 @@ export function AssignmentCreateForm({ assets, users, locations }: Props) {
           className={textareaClass}
           placeholder="Observaciones adicionales sobre la asignación"
         />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Firma de recepción *</Label>
-        <SignaturePad />
       </div>
 
       {state && !state.success && <p className="text-destructive text-sm">{state.error}</p>}

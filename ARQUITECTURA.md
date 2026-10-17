@@ -42,17 +42,17 @@ Se adopta una arquitectura **full-stack unificada** utilizando Next.js como úni
 │  │               NEXT.JS APP (único proceso)                  │  │
 │  │                                                           │  │
 │  │  ┌─────────────────────┐  ┌──────────────────────────┐   │  │
-│  │  │  App Router (Pages)  │  │  Route Handlers / Actions │   │  │
+│  │  │  App Router (Pages)  │  │  Server Actions / Queries │   │  │
 │  │  │                     │  │                          │   │  │
-│  │  │  Server Components   │  │  /api/assets             │   │  │
-│  │  │  (render en server)  │  │  /api/assignments        │   │  │
-│  │  │                     │  │  /api/incidents           │   │  │
-│  │  │  Client Components   │  │  /api/reports            │   │  │
-│  │  │  (interactividad)    │  │  /api/auth/[...nextauth] │   │  │
+│  │  │  Server Components   │  │  Server Actions          │   │  │
+│  │  │  (render en server)  │  │  (mutaciones: crear/     │   │  │
+│  │  │                     │  │   editar/firmar/etc.)    │   │  │
+│  │  │  Client Components   │  │  Server Queries          │   │  │
+│  │  │  (interactividad)    │  │  (lecturas server-side)   │   │  │
 │  │  │                     │  │                          │   │  │
-│  │  │  Tailwind CSS        │  │  Server Actions          │   │  │
-│  │  │  shadcn/ui           │  │  (form submissions,      │   │  │
-│  │  └─────────┬───────────┘  │   mutaciones directas)   │   │  │
+│  │  │  Tailwind CSS        │  │  Route Handlers:          │   │  │
+│  │  │  shadcn/ui           │  │  /api/auth/[...nextauth] │   │  │
+│  │  └─────────┬───────────┘  │  + exportación CSV        │   │  │
 │  │            │              └──────────┬───────────────┘   │  │
 │  │            └─────────────────────────┤                   │  │
 │  │                                      │ Prisma Client     │  │
@@ -92,11 +92,13 @@ En Next.js App Router, las capas se organizan por responsabilidad dentro de un �
                              │
 ┌────────────────────────────▼────────────────────────────┐
 │               CAPA DE LÓGICA DE NEGOCIO                  │
-│                  Service Functions                       │
 │                                                         │
-│  Funciones TypeScript puras que encapsulan las reglas   │
-│  de negocio: validar serie única, verificar asignación  │
-│  activa, ejecutar baja de activo, etc.                   │
+│  Las reglas de negocio (serie única, asignación activa,  │
+│  baja de activo, etc.) viven hoy directamente dentro de  │
+│  cada Server Action en `src/server/actions/`.            │
+│  La carpeta `src/server/services/` existe en el proyecto │
+│  pero está vacía — reservada para si en el futuro se     │
+│  necesita extraer lógica compleja reutilizable.          │
 └────────────────────────────┬────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────┐
@@ -131,76 +133,96 @@ ciprijal-activos-ti/
 │   │   │   ├── assets/
 │   │   │   │   ├── page.tsx
 │   │   │   │   ├── new/page.tsx
+│   │   │   │   ├── export/route.ts          → Exportación CSV de activos
 │   │   │   │   └── [id]/
 │   │   │   │       ├── page.tsx
-│   │   │   │       └── edit/page.tsx
-│   │   │   ├── assignments/page.tsx
-│   │   │   ├── incidents/page.tsx
-│   │   │   ├── maintenance/page.tsx
+│   │   │   │       ├── edit/page.tsx
+│   │   │   │       ├── incidents/           → Incidencias del activo
+│   │   │   │       ├── maintenance/         → Órdenes de mantenimiento del activo
+│   │   │   │       └── expenses/            → Gastos del activo
+│   │   │   ├── assignments/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── new/page.tsx
+│   │   │   │   ├── export/route.ts          → Exportación CSV de asignaciones
+│   │   │   │   └── [id]/
+│   │   │   │       ├── receipt/page.tsx     → Responsiva de entrega (HTML imprimible)
+│   │   │   │       ├── return/page.tsx      → Registrar devolución (solo admin_ti)
+│   │   │   │       └── return-receipt/page.tsx → Responsiva de devolución
 │   │   │   ├── reports/page.tsx
-│   │   │   ├── alerts/page.tsx
-│   │   │   ├── audit/page.tsx     → Solo Administrador TI
 │   │   │   ├── admin/
-│   │   │   │   ├── users/page.tsx
-│   │   │   │   └── settings/page.tsx
-│   │   │   └── profile/page.tsx
+│   │   │   │   ├── users/
+│   │   │   │   ├── locations/
+│   │   │   │   └── asset-types/
+│   │   │   ├── my-assets/                   → Portal usuario_final
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── [assetId]/incidents/new/page.tsx
+│   │   │   │   └── assignments/[assignmentId]/sign/page.tsx → Firma de recepción
+│   │   │   └── help/page.tsx
+│   │   │
+│   │   │   (alerts/, audit/, profile/, incidents/ e maintenance/ de nivel superior
+│   │   │    existen como carpetas reservadas, sin page.tsx — no son rutas activas)
+│   │   │
 │   │   └── api/                   → Route Handlers
-│   │       ├── auth/[...nextauth]/route.ts
-│   │       ├── assets/
-│   │       │   ├── route.ts       → GET /api/assets, POST /api/assets
-│   │       │   └── [id]/route.ts  → GET, PATCH, DELETE /api/assets/:id
-│   │       ├── assignments/route.ts
-│   │       ├── incidents/route.ts
-│   │       ├── maintenance/route.ts
-│   │       └── reports/[type]/route.ts
+│   │       └── auth/[...nextauth]/route.ts  → Único endpoint HTTP de negocio;
+│   │                                           el resto del CRUD es Server Actions
 │   │
 │   ├── components/
-│   │   ├── ui/                    → Componentes shadcn/ui (auto-generados)
+│   │   ├── ui/                    → Componentes shadcn/ui (código propio)
 │   │   └── features/              → Componentes específicos de cada módulo
 │   │       ├── assets/
 │   │       ├── assignments/
-│   │       └── ...
+│   │       ├── incidents/
+│   │       ├── maintenance/
+│   │       ├── asset-expenses/
+│   │       ├── asset-types/
+│   │       ├── locations/
+│   │       └── users/
 │   │
 │   ├── server/
 │   │   ├── actions/               → Server Actions (mutaciones)
 │   │   │   ├── assets.actions.ts
 │   │   │   ├── assignments.actions.ts
-│   │   │   └── incidents.actions.ts
+│   │   │   ├── incidents.actions.ts
+│   │   │   ├── maintenance.actions.ts
+│   │   │   ├── users.actions.ts
+│   │   │   └── ... (una por módulo de negocio)
 │   │   ├── queries/               → Funciones de lectura server-side
 │   │   │   ├── assets.queries.ts
-│   │   │   └── dashboard.queries.ts
-│   │   └── services/              → Lógica de negocio reutilizable
-│   │       ├── assets.service.ts
-│   │       └── assignments.service.ts
+│   │   │   ├── dashboard.queries.ts
+│   │   │   ├── reports.queries.ts
+│   │   │   └── ...
+│   │   └── services/              → Existe, pero vacía en el estado actual
 │   │
 │   ├── lib/
 │   │   ├── prisma.ts              → Singleton del Prisma Client
-│   │   ├── auth.ts                → Configuración de NextAuth.js
+│   │   ├── auth.ts                → Configuración de NextAuth.js v5 (export `auth()`)
 │   │   └── utils.ts               → Utilidades comunes
 │   │
-│   ├── middleware.ts              → Protección de rutas y verificación de sesión
+│   ├── proxy.ts                   → Protección de rutas por sesión y rol
+│   │                                 (en Next.js 16 reemplaza a `middleware.ts`)
 │   └── types/                    → Tipos TypeScript compartidos
 │
 ├── public/                        → Archivos estáticos
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 └── package.json
 ```
+
+> Nota: Tailwind CSS v4 no usa `tailwind.config.ts` — la configuración de tema vive en `src/app/globals.css` mediante `@theme inline`.
 
 ---
 
 ## 5. ARQUITECTURA DE SEGURIDAD
 
-### 5.1 Middleware de Protección de Rutas
+### 5.1 Proxy de Protección de Rutas
 
-El archivo `middleware.ts` se ejecuta en el Edge Runtime de Next.js antes de que cualquier página o Route Handler responda. Es la primera línea de defensa:
+El archivo `src/proxy.ts` (en Next.js 16 reemplaza al antiguo `middleware.ts`) se ejecuta antes de que cualquier página responda. Es la primera línea de defensa:
 
 ```
 Petición entrante
       │
       ▼
-middleware.ts
+src/proxy.ts
       │
       ├── ¿Es ruta pública? (/login) → Pasa sin verificación
       │
@@ -208,29 +230,31 @@ middleware.ts
       │       No → Redirect a /login
       │       Sí → Continúa
       │
-      ├── ¿Es ruta de solo Administrador TI? (/audit, /admin/*, /assets/new, etc.)
-      │       Rol = usuario_final → Redirect a /dashboard con mensaje 403
+      ├── ¿Es ruta de solo Administrador TI? (/audit, /admin, /assets, /assignments,
+      │     /reports, /alerts, /dashboard — excepto /assignments/[id]/receipt y
+      │     /assignments/[id]/return-receipt, accesibles a cualquier autenticado)
+      │       Rol = usuario_final → Redirect a /my-assets
       │       Rol = admin_ti → Continúa
       │
-      └── Permite la petición → Page o Route Handler
+      └── Permite la petición → Page
 ```
 
 ### 5.2 Autenticación con NextAuth.js
 
 ```
 1. Usuario envía email + password → /login
-2. NextAuth verifica credenciales contra la base de datos (Prisma)
-3. Genera sesión firmada almacenada en una cookie httpOnly:
-   - Nombre: __Secure-next-auth.session-token
-   - Atributos: HttpOnly · Secure · SameSite=Lax · Path=/
-   - Contenido: { userId, role, name, email } — firmado con NEXTAUTH_SECRET
-4. No hay tokens JWT expuestos al cliente. No hay Redis.
+2. NextAuth (Credentials provider) verifica contra la base de datos (Prisma + bcrypt)
+3. Genera una sesión JWT firmada almacenada en una cookie httpOnly
+   (nombre y atributos exactos los gestiona NextAuth v5 según HTTPS/entorno)
+   - Contenido de la sesión de aplicación: { id, email, name, role } — ver
+     src/types/next-auth.d.ts y el callback `session()` en src/lib/auth.ts
+4. No hay tokens expuestos al cliente. No hay Redis.
    La sesión se valida en cada petición leyendo y verificando la cookie.
 
-Acceso a la sesión en el servidor:
-   Server Component → import { getServerSession } from "next-auth"
-   Route Handler     → import { getServerSession } from "next-auth"
-   Server Action     → import { getServerSession } from "next-auth"
+Acceso a la sesión en el servidor (NextAuth v5 / Auth.js):
+   Server Component → import { auth } from "@/lib/auth"; await auth()
+   Server Action     → import { auth } from "@/lib/auth"; await auth()
+   (NextAuth v5 ya no usa `getServerSession`, esa es la API de v4)
 
 En logout:
    NextAuth invalida la cookie. No requiere operación en base de datos.
@@ -240,24 +264,25 @@ En logout:
 
 La verificación de autorización ocurre en **dos niveles**:
 
-**Nivel 1 — Middleware (antes de llegar al código):**
+**Nivel 1 — `src/proxy.ts` (antes de llegar al código de la página):**
 - Bloquea acceso a rutas completas según el rol.
-- Usuario Final no puede ni siquiera acceder a `/audit` o `/admin`.
+- Usuario Final no puede ni siquiera acceder a `/audit`, `/admin`, `/assets`, etc.
 
-**Nivel 2 — Servidor (dentro de cada acción o handler):**
+**Nivel 2 — Servidor (dentro de cada Server Action o página):**
 - Verifica que el usuario tenga derecho sobre el recurso específico.
-- Funciones helper reutilizables en `lib/auth.ts`:
+- Los únicos dos helpers reutilizables en `src/lib/auth.ts` son:
 
 ```typescript
-// Lanza error 403 si el usuario no es admin_ti
-async function requireAdminTI(session: Session): Promise<void>
+// Lanza error si no hay sesión o el usuario no es admin_ti
+async function requireAdminTI(): Promise<{ id, email, role }>
 
-// Lanza error 403 si usuario_final intenta acceder
-// a un recurso que no le pertenece
-async function requireOwnership(session: Session, resourceOwnerId: string): Promise<void>
+// Lanza error si no hay sesión válida
+async function requireAuthenticatedUser(): Promise<{ id, email, role }>
 ```
 
-Estas funciones se llaman al inicio de cada Server Action y Route Handler que manipule datos sensibles. La seguridad **no depende** de si el botón es visible en el frontend.
+No existe un helper `requireOwnership()` genérico. La verificación de que un recurso pertenece al usuario autenticado se hace de forma explícita dentro de cada Server Action o página, comparando el `id` de sesión contra el dueño del registro — por ejemplo, en `signDeliveryAction` (`src/server/actions/assignments.actions.ts`): `if (assignment.userId !== sessionUser.id) return { success: false, ... }`. Estas verificaciones se hacen al inicio de cada Server Action que manipule datos sensibles. La seguridad **no depende** de si el botón es visible en el frontend.
+
+Todos los Server Actions validan sus datos de entrada con esquemas de Zod antes de tocar la base de datos — es una convención consistente en todo `src/server/actions/`, no solo en los módulos sensibles.
 
 ---
 
@@ -271,35 +296,20 @@ Estas funciones se llaman al inicio de cada Server Action y Route Handler que ma
 
 ### 6.2 Soft Delete (Eliminación Lógica)
 
-Ningún registro se elimina físicamente. Todas las entidades tienen:
+El soft delete **no es universal** — se aplica según el tipo de entidad:
 
-```prisma
-deletedAt  DateTime?  // NULL = activo, fecha = eliminado lógicamente
-deletedBy  String?    // UUID del usuario que eliminó
-```
+- **Con `deletedAt` + `deletedBy`:** `Asset`, `AssetCredential`.
+- **Solo con `deletedAt`:** `User`, `Location`.
+- **Con bandera `isActive` (sin `deletedAt`):** `AssetType`, `Document`.
+- **Sin ningún mecanismo de borrado lógico (registros históricos inmutables):** `AssetAssignment`, `AssetExpense`, `Incident`, `MaintenanceOrder`, `MaintenanceSchedule`, `AuditLog`, `AssetTechnicalInfo`. Estas tablas no se editan ni se marcan como inactivas — son historial permanente.
 
-Las queries de Prisma incluyen `where: { deletedAt: null }` en todas las consultas de listado. Se crea un helper `withSoftDelete()` para estandarizar esto.
+Las queries de Prisma sobre entidades con `deletedAt` incluyen `where: { deletedAt: null }` en los listados. No existe actualmente un helper compartido tipo `withSoftDelete()` — el filtro se repite explícitamente en cada query.
 
 ### 6.3 Auditoría de Cambios
 
-Tabla `audit_logs` de solo inserción. Se escribe desde el servidor después de cada operación significativa:
+El modelo `AuditLog` existe en `prisma/schema.prisma` como tabla de solo inserción, con los campos `entity`, `entityId`, `action`, `oldValues`, `newValues`, `userId`, `userEmail`, `userRole`, `ipAddress`, `userAgent`, `createdAt`.
 
-```
-audit_logs
-├── id          String  @id @default(uuid())
-├── entity      String  (nombre de la tabla: "assets", "assignments", etc.)
-├── entityId    String  (UUID del registro afectado)
-├── action      String  (CREATE | UPDATE | DELETE | LOGIN | LOGOUT | EXPORT)
-├── oldValues   Json?   (estado anterior, null para CREATE)
-├── newValues   Json?   (estado nuevo, null para DELETE)
-├── userId      String
-├── userEmail   String  (desnormalizado para persistencia histórica)
-├── ipAddress   String
-├── userAgent   String?
-└── createdAt   DateTime @default(now())
-```
-
-La tabla es simple y plana — **sin particionamiento**. Para la escala de CIPRIJAL v1.0, una tabla estándar con índices en `entityId` y `createdAt` es suficiente.
+**Estado actual: el modelo existe, pero ninguna Server Action escribe en él todavía.** No hay una función `writeAuditLog()` ni invocaciones a `prisma.auditLog.create()` en el código. La escritura activa de auditoría es trabajo pendiente, no funcionalidad entregada.
 
 ---
 
@@ -308,24 +318,26 @@ La tabla es simple y plana — **sin particionamiento**. Para la escala de CIPRI
 ### 7.1 Routing (Next.js App Router)
 
 ```
-/                           → Redirect a /dashboard
-/login                      → Pública — inicio de sesión
-/dashboard                  → Panel principal con KPIs
-/assets                     → Listado de activos (solo admin_ti ve botón "Nuevo")
-/assets/new                 → Registrar nuevo activo (solo admin_ti)
-/assets/[id]                → Detalle: info, historial, documentos, mantenimiento
-/assets/[id]/edit           → Editar activo (solo admin_ti)
-/assignments                → Gestión de asignaciones
-/incidents                  → Incidencias (admin_ti ve todas; usuario_final solo las suyas)
-/maintenance                → Órdenes de trabajo
-/maintenance/[id]           → Detalle de orden de trabajo
-/reports                    → Centro de reportes
-/alerts                     → Panel de alertas activas
-/audit                      → Log de auditoría (solo admin_ti)
-/admin/users                → Gestión de usuarios (solo admin_ti)
-/admin/settings             → Configuración del sistema (solo admin_ti)
-/profile                    → Perfil del usuario autenticado
+/                                            → Redirect según rol (admin_ti → /dashboard, usuario_final → /my-assets)
+/login                                       → Pública — inicio de sesión
+/dashboard                                   → Panel principal (admin_ti)
+/assets, /assets/new, /assets/[id](/edit)    → Inventario de activos (admin_ti)
+/assets/[id]/incidents, /maintenance, /expenses → Historial anidado por activo (admin_ti)
+/assets/export                               → Exportación CSV de activos (admin_ti)
+/assignments, /assignments/new               → Gestión de asignaciones (admin_ti)
+/assignments/[id]/receipt                    → Responsiva de entrega (admin_ti + usuario_final propietario)
+/assignments/[id]/return                     → Registrar devolución, firmada por el admin que recibe (admin_ti)
+/assignments/[id]/return-receipt             → Responsiva de devolución (admin_ti + usuario_final propietario)
+/assignments/export                          → Exportación CSV de asignaciones (admin_ti)
+/reports                                     → Dashboard de reportes (admin_ti)
+/admin/users, /admin/locations, /admin/asset-types → Catálogos y usuarios (admin_ti)
+/my-assets                                   → Portal del usuario_final: sus equipos, firma pendiente, incidencias
+/my-assets/[assetId]/incidents/new           → Reportar falla (usuario_final)
+/my-assets/assignments/[assignmentId]/sign   → Firmar recepción del propio equipo (usuario_final)
+/help                                        → Guía rápida interna (cualquier rol)
 ```
+
+Las carpetas `/alerts`, `/audit`, `/profile`, `/incidents` y `/maintenance` (de nivel superior) existen en `src/app/(dashboard)/` pero están vacías, sin `page.tsx` — no son rutas activas hoy.
 
 ### 7.2 Modelo de Renderizado
 
@@ -364,24 +376,24 @@ Client Component (formulario)
         ▼
 server/actions/assets.actions.ts
         │
-        ├── getServerSession() → verifica autenticación
-        ├── requireAdminTI()   → verifica autorización
+        ├── auth() / requireAdminTI() → verifica autenticación y rol
         ├── validar inputs     → zod schema
-        ├── service.createAsset() → reglas de negocio
+        ├── reglas de negocio inline (serie única, estado válido, etc.)
         │       └── prisma.asset.create()
-        ├── writeAuditLog()
         ├── revalidatePath("/assets")
-        └── return { success: true } | { error: "..." }
+        └── return { success: true } | { success: false, error: "..." }
         │
         ▼
 Client Component actualiza UI según resultado
 ```
 
+> Nota: el paso de auditoría (`writeAuditLog()`) no está implementado todavía — ver §6.3.
+
 ### 7.4 Sistema de Diseño
 
 - **Tailwind CSS**: estilos utility-first. Sin CSS personalizado salvo casos puntuales.
-- **shadcn/ui**: componentes de UI copiados al repositorio (`/components/ui/`). No es una dependencia de npm — el código es propio. Incluye: Table, Form, Dialog, Button, Input, Select, Badge, Card, Tabs, Dropdown, Calendar, Toast.
-- **Recharts**: gráficas del dashboard (línea de tiempo de activos, distribución por tipo, incidencias por mes).
+- **shadcn/ui**: componentes de UI copiados al repositorio (`/components/ui/`, estilo `base-nova` sobre `@base-ui/react`). No es una dependencia de npm — el código es propio.
+- El dashboard y los reportes actuales (`getReportsSummary()`) se presentan como contadores y tablas HTML; no se usa ninguna librería de gráficas (Recharts no está instalada en el proyecto).
 
 ---
 
@@ -402,7 +414,9 @@ Comandos:
 └── npx prisma generate  → Regenera tipos TypeScript del schema
 ```
 
-### 8.2 Entorno de Producción — Railway
+### 8.2 Entorno de Producción — Railway (previsto)
+
+> **Estado actual:** el despliegue en Railway es el entorno **previsto**, no un hecho consumado. Aún no se ha desplegado a producción; el momento y la decisión final de despliegue quedan sujetos a la empresa. Lo que sigue describe el plan, no el estado actual del sistema.
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -416,20 +430,21 @@ Comandos:
 │  │                         │   │  DATABASE_URL inyectada   │  │
 │  │  Variables de entorno:  │   │  como variable de entorno │  │
 │  │  - DATABASE_URL         │◄──┤                          │  │
-│  │  - NEXTAUTH_SECRET      │   └──────────────────────────┘  │
-│  │  - NEXTAUTH_URL         │                                  │
-│  │  - SMTP_*               │                                  │
+│  │  - AUTH_SECRET          │   └──────────────────────────┘  │
+│  │  - AUTH_URL             │                                  │
+│  │  - SMTP_* (reservadas,  │                                  │
+│  │    sin uso en v1.0)     │                                  │
 │  └─────────────────────────┘                                  │
 │                                                               │
 │  SSL automático · Dominio custom · Escala automática          │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**Flujo de despliegue:**
+**Flujo de despliegue previsto (pendiente de ejecutar):**
 1. Push a la rama `main` en GitHub.
 2. Railway detecta el cambio y dispara el build automáticamente.
 3. Build: `npm run build` (Next.js compila y optimiza).
-4. Pre-deploy: `npx prisma migrate deploy` (aplica migraciones pendientes).
+4. Pre-deploy: `npm run db:migrate:deploy` (aplica migraciones pendientes).
 5. Railway reemplaza la instancia anterior con la nueva (zero-downtime).
 6. No hay Nginx, no hay Docker Compose, no hay configuración de servidor.
 
@@ -438,26 +453,21 @@ Comandos:
 ## 9. FLUJO DE CI/CD
 
 ```
-Developer push a rama feature/*
+Developer push / PR a main o develop
         │
         ▼
-GitHub Actions — CI Pipeline (en cada PR)
+GitHub Actions — CI Pipeline (.github/workflows/ci.yml)
 ├── npm ci
 ├── npx prisma generate
-├── npx tsc --noEmit          → Verificación de tipos
-├── npx eslint src/           → Lint
-├── npm test                  → Tests unitarios (Jest / Vitest)
-└── npm run build             → Verifica que compila sin errores
+├── npm run typecheck         → tsc --noEmit
+├── npm run lint               → eslint
+├── npm run format:check       → prettier --check
+└── npm run build
 
-        │ PR aprobado y mergeado a main
-        ▼
-Railway — Deploy Automático
-├── Build de producción (Next.js)
-├── prisma migrate deploy
-└── Swap de instancia (zero-downtime)
+        │ (deploy a Railway: previsto, aún no ejecutado — ver §8.2)
 ```
 
-No hay Docker Hub, no hay registro de imágenes, no hay aprobación manual de deploy para v1.0. El flujo es: merge a `main` → Railway despliega. Simple y sin fricción para un equipo pequeño.
+No hay paso de tests automatizados en el pipeline (no hay Jest/Vitest instalado en el proyecto). No hay Docker Hub, no hay registro de imágenes. El CI actual verifica tipos, lint, formato y build; el deploy a Railway es un paso futuro, no configurado todavía.
 
 ---
 
@@ -468,32 +478,4 @@ No hay Docker Hub, no hay registro de imágenes, no hay aprobación manual de de
 - **Razón:** Elimina la complejidad de mantener dos proyectos separados, dos builds y la gestión de CORS. Los tipos TypeScript se comparten nativamente. Los Server Components y Server Actions permiten ejecutar código de servidor directamente desde la capa de presentación sin capa HTTP intermedia.
 - **Consecuencias:** El equipo necesita entender el modelo de renderizado de Next.js (Server vs. Client Components). El acoplamiento entre UI y servidor es mayor, lo cual es aceptable para un sistema interno de esta escala.
 
-### ADR-002: PostgreSQL + Prisma ORM
-- **Decisión:** PostgreSQL 15 como base de datos, Prisma ORM para acceso a datos.
-- **Razón:** PostgreSQL es la única base de datos que cubre todos los requisitos: datos relacionales complejos, soporte JSONB para especificaciones técnicas de activos, robustez para auditoría. Prisma genera tipos TypeScript automáticamente desde el schema, elimina errores en tiempo de ejecución y tiene un DX superior a alternativas como TypeORM para este stack.
-- **Consecuencias:** El schema de la BD es la fuente de verdad para los tipos del servidor. Cambios de schema requieren `prisma migrate` — proceso controlado y reversible.
-
-### ADR-003: UUID como clave primaria en todas las tablas
-- **Decisión:** UUID v4 para todas las claves primarias, generado con `@default(uuid())` en Prisma.
-- **Razón:** Previene enumeración de recursos por parte de usuarios malintencionados. Los códigos de negocio (ej: HW-2026-001) son campos adicionales separados.
-- **Consecuencias:** Índices ligeramente más grandes que con integers. El impacto es negligible para la escala de CIPRIJAL.
-
-### ADR-004: NextAuth.js con sesiones en cookie en lugar de JWT + Redis
-- **Decisión:** NextAuth.js (Auth.js) con sesiones basadas en cookies httpOnly firmadas.
-- **Razón:** Elimina la dependencia de Redis para gestión de sesiones. Las cookies httpOnly son el mecanismo más seguro para aplicaciones web — no son accesibles desde JavaScript del cliente. La sesión contiene `{ userId, role }` firmada con `NEXTAUTH_SECRET`. NextAuth se integra nativamente con Next.js sin configuración adicional.
-- **Consecuencias:** Las sesiones no son "stateless" en el sentido JWT clásico, pero tampoco requieren una base de datos de sesiones — NextAuth puede operar con una cookie firmada sin backend de sesiones para v1.0. El logout es inmediato (la cookie se elimina).
-
-### ADR-005: Railway como plataforma de despliegue en lugar de Docker + Nginx
-- **Decisión:** Despliegue directo en Railway (PaaS) conectado a GitHub.
-- **Razón:** Para un equipo pequeño, gestionar Nginx, Docker Compose y certificados SSL manualmente añade overhead operacional que no aporta valor de negocio. Railway abstrae toda esa infraestructura: detecta Next.js automáticamente, gestiona SSL, provee PostgreSQL administrado con backups y permite deploys automáticos en cada push a `main`.
-- **Consecuencias:** Dependencia de un proveedor PaaS (vendor lock-in moderado). Si en el futuro se necesita mayor control de infraestructura, la migración a un VPS con Docker es directa — el proyecto Next.js no tiene dependencias específicas de Railway.
-
-### ADR-006: shadcn/ui + Tailwind CSS en lugar de Ant Design
-- **Decisión:** Tailwind CSS como sistema de estilos, shadcn/ui como biblioteca de componentes.
-- **Razón:** Los componentes de shadcn/ui viven en el repositorio del proyecto (`/components/ui/`) — son código propio, modificable sin restricciones. Tailwind produce bundles CSS mínimos (solo las clases usadas). La combinación es el estándar de facto para proyectos Next.js en 2026 y tiene soporte nativo para React Server Components, algo que Ant Design no garantiza completamente.
-- **Consecuencias:** Algunos componentes enterprise complejos (tablas avanzadas, selectores de fecha de rango) requieren instalación puntual vía `npx shadcn add`. La personalización visual es total, sin tema global impuesto.
-
-### ADR-007: Sin Redis ni colas de trabajo en v1.0
-- **Decisión:** No se usa Redis ni ninguna cola de trabajos en background para v1.0.
-- **Razón:** Las operaciones que típicamente van a una cola (envío de emails, generación de reportes) se ejecutan de forma síncrona en los Route Handlers para v1.0. El volumen de CIPRIJAL no justifica la complejidad operacional de BullMQ + Redis.
-- **Consecuencias:** Los endpoints de generación de reportes pesados pueden tardar más en responder. Se mitiga con un timeout generoso y un indicador de "generando..." en el frontend. Si el volumen crece, se puede añadir una solución de colas sin modificar la lógica de negocio.
+El resto de las decisiones de stack (PostgreSQL + Prisma, UUID como PK, NextAuth.js, Railway, shadcn/ui + Tailwind, sin Redis) están documentadas con su justificación y alternativas descartadas en `DECISIONES_TECNICAS.md` (DT-001 a DT-016) — no se repiten aquí para evitar mantener la misma información en dos archivos. El estado actual de correo/reportes está en DT-013: no hay envío de emails ni generación de PDF/Excel implementados en v1.0.
