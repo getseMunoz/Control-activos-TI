@@ -188,11 +188,13 @@ export function AssetEditForm({ asset, assetTypes, locations }: Props) {
             className={selectClass}
             defaultValue={asset.status}
           >
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+            {Object.entries(STATUS_LABELS)
+              .filter(([value]) => value !== 'stolen' && value !== 'lost')
+              .map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
           </select>
           <p className="text-muted-foreground text-xs">
             &quot;Asignado&quot; solo es válido si existe una asignación activa gestionada en el
@@ -256,7 +258,7 @@ export function AssetEditForm({ asset, assetTypes, locations }: Props) {
         </label>
         <p className="text-muted-foreground text-xs">
           {isActive
-            ? 'Al desactivar, el activo se archivará. No puede tener una asignación activa.'
+            ? 'Al desactivar este activo se dará de baja del registro activo del sistema y dejará de aparecer en los listados y reportes. Su historial relacionado se conservará. No puede tener una asignación activa.'
             : 'Al activar, el activo volverá a estar disponible en el sistema.'}
         </p>
       </div>

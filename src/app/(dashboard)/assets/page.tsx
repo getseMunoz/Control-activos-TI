@@ -22,14 +22,7 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'outline' | 'des
   lost: 'destructive',
 }
 
-const VALID_STATUSES = [
-  'in_storage',
-  'assigned',
-  'in_maintenance',
-  'decommissioned',
-  'stolen',
-  'lost',
-]
+const VALID_STATUSES = ['in_storage', 'assigned', 'in_maintenance', 'decommissioned']
 
 const inputClass =
   'border border-[#e2e8f0] rounded-md px-2.5 py-1.5 text-sm bg-white text-[#0f172a] outline-none focus:ring-2 focus:ring-[#3b82f6]/40 h-8'

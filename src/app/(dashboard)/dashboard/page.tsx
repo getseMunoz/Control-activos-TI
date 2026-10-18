@@ -480,61 +480,6 @@ export default async function DashboardPage() {
               ))
             )}
           </AlertCard>
-
-          {/* E — Activos perdidos/robados */}
-          <AlertCard
-            title="Activos perdidos / robados"
-            count={alerts.lostOrStolenAssetsCount}
-            actionHref="/assets?status=lost"
-            actionLabel="Ver activos"
-            danger
-          >
-            {alerts.lostOrStolenAssets.length === 0 ? (
-              <p style={emptyText}>Sin pendientes.</p>
-            ) : (
-              alerts.lostOrStolenAssets.map((asset) => (
-                <AlertRow key={asset.id}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '5px',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Mono>{asset.internalCode}</Mono>
-                      <Badge variant="destructive" style={{ fontSize: '10px', padding: '0 5px' }}>
-                        {ASSET_STATUS_LABELS[asset.status] ?? asset.status}
-                      </Badge>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        color: '#0f172a',
-                        margin: '2px 0 0',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={asset.name}
-                    >
-                      {asset.name}
-                    </p>
-                    {asset.location && (
-                      <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
-                        {asset.location.name}
-                      </p>
-                    )}
-                  </div>
-                  <Link href={`/assets/${asset.id}`} style={actionLink}>
-                    Ver activo
-                  </Link>
-                </AlertRow>
-              ))
-            )}
-          </AlertCard>
         </div>
       </div>
 
