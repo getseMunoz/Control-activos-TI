@@ -56,7 +56,18 @@ export function UserCreateForm({ locations }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="phone">Teléfono</Label>
-          <Input id="phone" name="phone" type="tel" autoComplete="off" />
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            autoComplete="off"
+            inputMode="numeric"
+            pattern="[0-9]{10}"
+            maxLength={10}
+          />
+          <p className="text-muted-foreground text-xs">
+            Opcional. Si se captura, debe tener 10 dígitos numéricos.
+          </p>
         </div>
       </div>
 

@@ -17,13 +17,18 @@ const passwordSchema = z
   .regex(/[0-9]/, 'Debe contener al menos un número')
   .regex(/[^A-Za-z0-9]/, 'Debe contener al menos un carácter especial')
 
+const phoneSchema = z
+  .string()
+  .regex(/^\d{10}$/, 'El teléfono debe tener 10 dígitos numéricos')
+  .optional()
+
 const createSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio'),
   lastName: z.string().min(1, 'El apellido es obligatorio'),
   email: z.string().email('Correo electrónico inválido'),
   role: z.enum(['admin_ti', 'usuario_final'], { message: 'Rol inválido' }),
   position: z.string().optional(),
-  phone: z.string().optional(),
+  phone: phoneSchema,
   modality: z.enum(['presencial', 'remoto', 'hibrido']).optional(),
   locationId: z.string().uuid('ID de ubicación inválido').optional(),
   password: passwordSchema,
@@ -35,7 +40,7 @@ const updateSchema = z.object({
   lastName: z.string().min(1, 'El apellido es obligatorio'),
   role: z.enum(['admin_ti', 'usuario_final'], { message: 'Rol inválido' }),
   position: z.string().optional(),
-  phone: z.string().optional(),
+  phone: phoneSchema,
   modality: z.enum(['presencial', 'remoto', 'hibrido']).optional(),
   locationId: z.string().uuid('ID de ubicación inválido').optional(),
   isActive: z.boolean(),

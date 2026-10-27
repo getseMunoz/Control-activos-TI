@@ -86,12 +86,19 @@ export function UserEditForm({ user, locations }: Props) {
         <div className="space-y-1.5">
           <Label htmlFor="phone">Teléfono</Label>
           <Input
+            key={`${user.id}-${user.firstName}-${user.lastName}-${user.role}-${user.position}-${user.phone}-${user.modality}-${user.locationId}-${user.isActive}`}
             id="phone"
             name="phone"
             type="tel"
             defaultValue={user.phone ?? ''}
             autoComplete="off"
+            inputMode="numeric"
+            pattern="[0-9]{10}"
+            maxLength={10}
           />
+          <p className="text-muted-foreground text-xs">
+            Opcional. Si se captura, debe tener 10 dígitos numéricos.
+          </p>
         </div>
       </div>
 
