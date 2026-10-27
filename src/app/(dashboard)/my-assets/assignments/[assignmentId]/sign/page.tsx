@@ -3,11 +3,7 @@ import Link from 'next/link'
 import { requireAuthenticatedUser } from '@/lib/auth'
 import { getAssignmentForSigning } from '@/server/queries/assignments.queries'
 import { SignDeliveryForm } from '@/components/features/assignments/SignDeliveryForm'
-
-function fmt(d: Date | null | undefined): string {
-  if (!d) return '—'
-  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-}
+import { formatDate } from '@/lib/dates'
 
 const cardStyle = {
   background: 'white',
@@ -74,7 +70,7 @@ export default async function SignDeliveryPage({ params }: Props) {
             ['Marca / Modelo', [asset.brand, asset.model].filter(Boolean).join(' ') || null],
             ['Número de serie', asset.serialNumber],
             ['Ubicación', asset.location?.name],
-            ['Asignado el', fmt(assignment.assignedAt)],
+            ['Asignado el', formatDate(assignment.assignedAt)],
           ].map(([label, value]) =>
             value ? (
               <div key={label as string}>

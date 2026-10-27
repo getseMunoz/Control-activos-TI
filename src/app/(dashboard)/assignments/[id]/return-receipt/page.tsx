@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getAssignmentReturnReceiptById } from '@/server/queries/assignments.queries'
 import { PrintButton } from '@/components/features/assignments/PrintButton'
+import { formatDate } from '@/lib/dates'
 
 const ROLE_LABELS: Record<string, string> = {
   admin_ti: 'Administrador TI',
@@ -315,8 +316,8 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
           >
             <tbody>
               {[
-                ['Fecha de asignación', fmt(assignment.assignedAt)],
-                ['Fecha de devolución', fmt(assignment.returnedAt)],
+                ['Fecha de asignación', formatDate(assignment.assignedAt, { month: 'long' })],
+                ['Fecha de devolución', formatDate(assignment.returnedAt, { month: 'long' })],
                 ['Ubicación de entrega original', deliveryLocation?.name],
                 [
                   'Responsable TI que asignó',

@@ -5,6 +5,7 @@ import { getAssignmentById } from '@/server/queries/assignments.queries'
 import { getUserById } from '@/server/queries/users.queries'
 import { AssignmentReturnForm } from '@/components/features/assignments/AssignmentReturnForm'
 import { buttonVariants } from '@/components/ui/button'
+import { formatDate } from '@/lib/dates'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -24,13 +25,7 @@ export default async function ReturnAssignmentPage({ params }: Props) {
           Asignación ya devuelta
         </h1>
         <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px' }}>
-          Esta asignación ya fue cerrada el{' '}
-          {assignment.returnedAt.toLocaleDateString('es-MX', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-          })}
-          .
+          Esta asignación ya fue cerrada el {formatDate(assignment.returnedAt, { month: 'long' })}.
         </p>
         <Link href="/assignments" className={buttonVariants({ variant: 'outline' })}>
           Volver al listado

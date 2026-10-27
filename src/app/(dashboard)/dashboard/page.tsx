@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getDashboardSummary, getDashboardAlerts } from '@/server/queries/dashboard.queries'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/dates'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -432,7 +433,7 @@ export default async function DashboardPage() {
                       {a.user.firstName} {a.user.lastName}
                     </p>
                     <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
-                      {a.asset.internalCode} · {a.asset.name} · {fmt(a.assignedAt)}
+                      {a.asset.internalCode} · {a.asset.name} · {formatDate(a.assignedAt)}
                     </p>
                   </div>
                   <Link href={`/assignments/${a.id}/receipt`} style={actionLink}>
@@ -470,7 +471,7 @@ export default async function DashboardPage() {
                       {a.user.firstName} {a.user.lastName}
                     </p>
                     <p style={{ fontSize: '11px', color: '#94a3b8', margin: '1px 0 0' }}>
-                      {a.asset.internalCode} · {a.asset.name} · Devuelto {fmt(a.returnedAt)}
+                      {a.asset.internalCode} · {a.asset.name} · Devuelto {formatDate(a.returnedAt)}
                     </p>
                   </div>
                   <Link href={`/assignments/${a.id}/return-receipt`} style={actionLink}>
@@ -787,7 +788,7 @@ export default async function DashboardPage() {
                     </p>
                     {m.scheduledDate && (
                       <p style={{ fontSize: '11px', color: '#f59e0b', margin: '2px 0 0' }}>
-                        Programado: {fmt(m.scheduledDate)}
+                        Programado: {formatDate(m.scheduledDate)}
                       </p>
                     )}
                   </div>

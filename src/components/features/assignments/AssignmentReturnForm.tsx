@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import type { AssignmentDetail } from '@/server/queries/assignments.queries'
+import { formatDate } from '@/lib/dates'
 
 const textareaClass =
   'border-input bg-transparent text-foreground w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 resize-y min-h-[72px]'
@@ -46,13 +47,7 @@ export function AssignmentReturnForm({ assignment, adminName }: Props) {
         </div>
         <div className="flex gap-2">
           <span className="text-muted-foreground w-32 shrink-0">Fecha asignación:</span>
-          <span>
-            {assignment.assignedAt.toLocaleDateString('es-MX', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
+          <span>{formatDate(assignment.assignedAt, { month: 'long' })}</span>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireAuthenticatedUser } from '@/lib/auth'
 import { getUserPortalSummary } from '@/server/queries/user-portal.queries'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/dates'
 
 const STATUS_LABELS: Record<string, string> = {
   in_storage: 'En almacén',
@@ -225,7 +226,7 @@ export default async function MyAssetsPage() {
                       ],
                       ['Número de serie', asset.serialNumber],
                       ['Ubicación', asset.location?.name],
-                      ['Asignado el', fmt(a.assignedAt)],
+                      ['Asignado el', formatDate(a.assignedAt)],
                       [
                         'Firma de recepción',
                         a.deliverySignedAt ? 'Firma registrada' : 'Pendiente de firma de recepción',
@@ -323,10 +324,10 @@ export default async function MyAssetsPage() {
                       {a.asset.assetType.name}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {fmt(a.assignedAt)}
+                      {formatDate(a.assignedAt)}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {fmt(a.returnedAt)}
+                      {formatDate(a.returnedAt)}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
                       {a.returnSignedAt ? (
@@ -465,7 +466,7 @@ export default async function MyAssetsPage() {
                       {fmt(inc.createdAt)}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {fmt(inc.resolvedAt)}
+                      {formatDate(inc.resolvedAt)}
                     </td>
                   </tr>
                 ))}

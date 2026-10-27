@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireAdminTI } from '@/lib/auth'
 import { getReportsSummary } from '@/server/queries/reports.queries'
+import { formatDate } from '@/lib/dates'
 
 export const metadata: Metadata = { title: 'Reportes — CIPRIJAL' }
 
@@ -374,13 +375,7 @@ export default async function ReportsPage() {
             MAINTENANCE_TYPE_LABELS[ot.type] ?? ot.type,
             MAINTENANCE_STATUS_LABELS[ot.status] ?? ot.status,
             PRIORITY_LABELS[ot.priority] ?? ot.priority,
-            ot.scheduledDate
-              ? ot.scheduledDate.toLocaleDateString('es-MX', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : '—',
+            ot.scheduledDate ? formatDate(ot.scheduledDate) : '—',
           ])}
           emptyText="Sin órdenes de mantenimiento activas"
         />

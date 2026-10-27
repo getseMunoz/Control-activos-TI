@@ -106,9 +106,6 @@ export function UserCreateForm({ locations }: Props) {
             {showPassword ? 'Ocultar' : 'Mostrar'}
           </button>
         </div>
-        <p className="text-muted-foreground text-xs">
-          El usuario deberá cambiar esta contraseña en su primer acceso.
-        </p>
       </div>
 
       {/* Error de servidor */}

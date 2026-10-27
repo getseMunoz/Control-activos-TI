@@ -3,6 +3,7 @@ import { getAssets, getAssetFilterOptions } from '@/server/queries/assets.querie
 import type { AssetListFilters } from '@/server/queries/assets.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/dates'
 
 const STATUS_LABELS: Record<string, string> = {
   in_storage: 'En almacén',
@@ -466,13 +467,7 @@ export default async function AssetsPage({ searchParams }: Props) {
                           : `$${totalExpenses.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {asset.purchaseDate
-                          ? asset.purchaseDate.toLocaleDateString('es-MX', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : '—'}
+                        {asset.purchaseDate ? formatDate(asset.purchaseDate) : '—'}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                         <Badge variant={asset.deletedAt ? 'outline' : 'default'}>

@@ -3,6 +3,7 @@ import { getAssignments, getAssignmentFilterOptions } from '@/server/queries/ass
 import type { AssignmentListFilters } from '@/server/queries/assignments.queries'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/dates'
 
 const ROLE_LABELS: Record<string, string> = {
   admin_ti: 'Administrador TI',
@@ -395,20 +396,10 @@ export default async function AssignmentsPage({ searchParams }: Props) {
                         {a.deliveryLocation?.name ?? '—'}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {a.assignedAt.toLocaleDateString('es-MX', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDate(a.assignedAt)}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {a.returnedAt
-                          ? a.returnedAt.toLocaleDateString('es-MX', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : '—'}
+                        {a.returnedAt ? formatDate(a.returnedAt) : '—'}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                         <Badge variant={isActive ? 'default' : 'outline'}>

@@ -95,7 +95,7 @@ export async function createUserAction(
       phone: data.phone ?? null,
       modality: data.modality ?? null,
       locationId: data.locationId ?? null,
-      mustChangePassword: true,
+      mustChangePassword: false,
     },
   })
 
@@ -309,7 +309,7 @@ export async function resetUserPasswordAction(
     where: { id: userId },
     data: {
       passwordHash,
-      mustChangePassword: true,
+      mustChangePassword: false,
     },
   })
 

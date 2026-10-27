@@ -7,6 +7,7 @@ import { getTechnicalInfoByAssetId } from '@/server/queries/technical-info.queri
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CredentialsPanel } from '@/components/features/assets/CredentialsPanel'
+import { formatDate } from '@/lib/dates'
 
 const STATUS_LABELS: Record<string, string> = {
   in_storage: 'En almacén',
@@ -255,7 +256,7 @@ export default async function AssetDetailPage({ params }: Props) {
             ['Modelo interno', asset.companyModel],
             ['Etiqueta inventario', asset.inventoryTag],
             ['Ubicación actual', asset.location?.name],
-            ['Fecha de compra', fmt(asset.purchaseDate)],
+            ['Fecha de compra', formatDate(asset.purchaseDate)],
             [
               'Precio de compra',
               asset.purchasePrice
@@ -321,7 +322,7 @@ export default async function AssetDetailPage({ params }: Props) {
                       activeAssignment.user.role,
                   ],
                   ['Correo', activeAssignment.user.email],
-                  ['Fecha de asignación', fmt(activeAssignment.assignedAt)],
+                  ['Fecha de asignación', formatDate(activeAssignment.assignedAt)],
                   ['Ubicación de entrega', activeAssignment.deliveryLocation?.name],
                   [
                     'Firma de recepción',
@@ -428,10 +429,10 @@ export default async function AssetDetailPage({ params }: Props) {
                         <span style={{ color: '#94a3b8', fontSize: '12px' }}>{a.user.email}</span>
                       </td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {fmt(a.assignedAt)}
+                        {formatDate(a.assignedAt)}
                       </td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                        {a.returnedAt ? fmt(a.returnedAt) : '—'}
+                        {a.returnedAt ? formatDate(a.returnedAt) : '—'}
                       </td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
                         {a.deliveryLocation?.name ?? '—'}
@@ -610,7 +611,7 @@ export default async function AssetDetailPage({ params }: Props) {
                         : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {inc.resolvedAt ? fmt(inc.resolvedAt) : '—'}
+                      {inc.resolvedAt ? formatDate(inc.resolvedAt) : '—'}
                     </td>
                     <td
                       style={{
@@ -724,7 +725,7 @@ export default async function AssetDetailPage({ params }: Props) {
                     }}
                   >
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {fmt(e.purchaseDate)}
+                      {formatDate(e.purchaseDate)}
                     </td>
                     <td style={{ padding: '8px 10px' }}>{e.name}</td>
                     <td
@@ -996,7 +997,7 @@ export default async function AssetDetailPage({ params }: Props) {
                         : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
-                      {fmt(m.scheduledDate)}
+                      {formatDate(m.scheduledDate)}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', color: '#475569' }}>
                       {fmt(m.completedAt)}

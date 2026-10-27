@@ -23,7 +23,14 @@ export function LocationEditForm({ location }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="name">Nombre *</Label>
-        <Input id="name" name="name" required defaultValue={location.name} autoComplete="off" />
+        <Input
+          key={`${location.id}-${location.name}-${location.description}-${location.isActive}`}
+          id="name"
+          name="name"
+          required
+          defaultValue={location.name}
+          autoComplete="off"
+        />
       </div>
 
       <div className="space-y-1.5">
