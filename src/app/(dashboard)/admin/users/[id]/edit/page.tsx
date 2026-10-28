@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { auth } from '@/lib/auth'
+import { requireAdminTI } from '@/lib/auth'
 import { getUserById, getActiveLocations } from '@/server/queries/users.queries'
 import { UserEditForm } from '@/components/features/users/UserEditForm'
 import { DeactivateUserButton } from '@/components/features/users/DeactivateUserButton'
@@ -16,15 +16,15 @@ type Props = {
 
 export default async function EditUserPage({ params, searchParams }: Props) {
   const [{ id }, { passwordReset }] = await Promise.all([params, searchParams])
-  const [session, user, locations] = await Promise.all([
-    auth(),
+  const [admin, user, locations] = await Promise.all([
+    requireAdminTI(),
     getUserById(id),
     getActiveLocations(),
   ])
 
   if (!user) notFound()
 
-  const isSelf = session?.user?.id === user.id
+  const isSelf = admin.id === user.id
 
   return (
     <div style={{ padding: '32px', maxWidth: '640px' }}>

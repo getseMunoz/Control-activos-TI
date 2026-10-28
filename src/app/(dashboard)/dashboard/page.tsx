@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type React from 'react'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { auth, requireAuthenticatedUser } from '@/lib/auth'
 import { getDashboardSummary, getDashboardAlerts } from '@/server/queries/dashboard.queries'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/dates'
@@ -211,8 +211,11 @@ const emptyText = {
 }
 
 export default async function DashboardPage() {
-  const [session, summary, alerts] = await Promise.all([
+  // requireAuthenticatedUser() revalida la sesión contra la base de datos (cierra sesión
+  // si el usuario ya no es válido); auth() se conserva solo para el saludo con nombre.
+  const [session, , summary, alerts] = await Promise.all([
     auth(),
+    requireAuthenticatedUser(),
     getDashboardSummary(),
     getDashboardAlerts(),
   ])

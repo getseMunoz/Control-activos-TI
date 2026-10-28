@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { requireAuthenticatedUser } from '@/lib/auth'
 import { getAssignmentReturnReceiptById } from '@/server/queries/assignments.queries'
 import { PrintButton } from '@/components/features/assignments/PrintButton'
 import { formatDate } from '@/lib/dates'
@@ -41,16 +41,19 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function AssignmentReturnReceiptPage({ params }: Props) {
   const { id } = await params
-  const [session, assignment] = await Promise.all([auth(), getAssignmentReturnReceiptById(id)])
+  const [user, assignment] = await Promise.all([
+    requireAuthenticatedUser(),
+    getAssignmentReturnReceiptById(id),
+  ])
 
   if (!assignment) notFound()
 
   // usuario_final solo puede ver su propia responsiva de devolución
-  if (session?.user?.role !== 'admin_ti' && assignment.userId !== session?.user?.id) {
+  if (user.role !== 'admin_ti' && assignment.userId !== user.id) {
     notFound()
   }
 
-  const backHref = session?.user?.role === 'admin_ti' ? '/assignments' : '/my-assets'
+  const backHref = user.role === 'admin_ti' ? '/assignments' : '/my-assets'
 
   // La asignación aún no fue devuelta
   if (assignment.returnedAt === null) {
@@ -79,7 +82,13 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
     )
   }
 
-  const { asset, user, assignedByUser, returnedByUser, deliveryLocation } = assignment
+  const {
+    asset,
+    user: assignmentUser,
+    assignedByUser,
+    returnedByUser,
+    deliveryLocation,
+  } = assignment
   const accessories = getAccessoriesText(assignment.accessories)
   const generatedAt = new Date()
   const returnDateStr = assignment.returnedAt.toISOString().slice(0, 10).replace(/-/g, '')
@@ -212,9 +221,14 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
           >
             <tbody>
               {[
-                ['Nombre completo', `${user.firstName} ${user.lastName}`],
-                ['Puesto / Rol', user.position ?? ROLE_LABELS[user.role] ?? user.role],
-                ['Correo electrónico', user.email],
+                ['Nombre completo', `${assignmentUser.firstName} ${assignmentUser.lastName}`],
+                [
+                  'Puesto / Rol',
+                  assignmentUser.position ??
+                    ROLE_LABELS[assignmentUser.role] ??
+                    assignmentUser.role,
+                ],
+                ['Correo electrónico', assignmentUser.email],
               ].map(([label, value]) => (
                 <tr key={label} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td
@@ -442,7 +456,8 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
                     />
                   </div>
                   <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
-                    {assignment.returnUserSignedByName ?? `${user.firstName} ${user.lastName}`}
+                    {assignment.returnUserSignedByName ??
+                      `${assignmentUser.firstName} ${assignmentUser.lastName}`}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
                     Firmado el {fmt(assignment.returnUserSignedAt, true)}
@@ -460,7 +475,7 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
                     }}
                   />
                   <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
-                    {user.firstName} {user.lastName}
+                    {assignmentUser.firstName} {assignmentUser.lastName}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
                     Pendiente de firma del usuario
@@ -511,7 +526,8 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
                     />
                   </div>
                   <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
-                    {assignment.returnSignedByName ?? `${user.firstName} ${user.lastName}`}
+                    {assignment.returnSignedByName ??
+                      `${assignmentUser.firstName} ${assignmentUser.lastName}`}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
                     Firmado el {fmt(assignment.returnSignedAt, true)}
@@ -529,7 +545,7 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
                     }}
                   />
                   <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
-                    {user.firstName} {user.lastName}
+                    {assignmentUser.firstName} {assignmentUser.lastName}
                   </p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
                     Sin firma de devolución registrada

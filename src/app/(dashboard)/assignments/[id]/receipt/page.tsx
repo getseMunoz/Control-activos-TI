@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { requireAuthenticatedUser } from '@/lib/auth'
 import { getAssignmentReceiptById } from '@/server/queries/assignments.queries'
 import { PrintButton } from '@/components/features/assignments/PrintButton'
 import { formatDate } from '@/lib/dates'
@@ -41,20 +41,23 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function AssignmentReceiptPage({ params }: Props) {
   const { id } = await params
-  const [session, assignment] = await Promise.all([auth(), getAssignmentReceiptById(id)])
+  const [user, assignment] = await Promise.all([
+    requireAuthenticatedUser(),
+    getAssignmentReceiptById(id),
+  ])
 
   if (!assignment) notFound()
 
   // usuario_final solo puede ver su propia responsiva
-  if (session?.user?.role !== 'admin_ti' && assignment.userId !== session?.user?.id) {
+  if (user.role !== 'admin_ti' && assignment.userId !== user.id) {
     notFound()
   }
 
-  const { asset, user, assignedByUser, deliveryLocation } = assignment
+  const { asset, user: assignmentUser, assignedByUser, deliveryLocation } = assignment
   const accessories = getAccessoriesText(assignment.accessories)
   const generatedAt = new Date()
   const folio = `${asset.internalCode}-${assignment.assignedAt.toISOString().slice(0, 10).replace(/-/g, '')}`
-  const backHref = session?.user?.role === 'admin_ti' ? '/assignments' : '/my-assets'
+  const backHref = user.role === 'admin_ti' ? '/assignments' : '/my-assets'
 
   return (
     <>
@@ -173,9 +176,14 @@ export default async function AssignmentReceiptPage({ params }: Props) {
           >
             <tbody>
               {[
-                ['Nombre completo', `${user.firstName} ${user.lastName}`],
-                ['Puesto / Rol', user.position ?? ROLE_LABELS[user.role] ?? user.role],
-                ['Correo electrónico', user.email],
+                ['Nombre completo', `${assignmentUser.firstName} ${assignmentUser.lastName}`],
+                [
+                  'Puesto / Rol',
+                  assignmentUser.position ??
+                    ROLE_LABELS[assignmentUser.role] ??
+                    assignmentUser.role,
+                ],
+                ['Correo electrónico', assignmentUser.email],
               ].map(([label, value]) => (
                 <tr key={label} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td
@@ -381,7 +389,8 @@ export default async function AssignmentReceiptPage({ params }: Props) {
                 />
               </div>
               <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
-                {assignment.deliverySignedByName ?? `${user.firstName} ${user.lastName}`}
+                {assignment.deliverySignedByName ??
+                  `${assignmentUser.firstName} ${assignmentUser.lastName}`}
               </p>
               <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
                 Firmado el {fmt(assignment.deliverySignedAt, true)}
@@ -398,7 +407,7 @@ export default async function AssignmentReceiptPage({ params }: Props) {
                 }}
               />
               <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
-                {user.firstName} {user.lastName}
+                {assignmentUser.firstName} {assignmentUser.lastName}
               </p>
               <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>Sin firma registrada</p>
             </div>

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { requireAdminTI } from '@/lib/auth'
 import { getAssetDetailById } from '@/server/queries/assets.queries'
 import { getCredentialsByAssetId } from '@/server/queries/credentials.queries'
 import { getTechnicalInfoByAssetId } from '@/server/queries/technical-info.queries'
@@ -142,11 +142,11 @@ type Props = { params: Promise<{ id: string }> }
 
 export default async function AssetDetailPage({ params }: Props) {
   const { id } = await params
-  const [asset, session] = await Promise.all([getAssetDetailById(id), auth()])
+  const [asset] = await Promise.all([getAssetDetailById(id), requireAdminTI()])
 
   if (!asset) notFound()
 
-  const isAdmin = session?.user?.role === 'admin_ti'
+  const isAdmin = true
   const [credentials, technicalInfo] = isAdmin
     ? await Promise.all([getCredentialsByAssetId(id), getTechnicalInfoByAssetId(id)])
     : [[], null]
