@@ -167,6 +167,10 @@ export async function getAssignableAssets() {
       status: 'in_storage',
       deletedAt: null,
       assignments: { none: { returnedAt: null } },
+      // RN-ACT-10: excluir activos con una orden de mantenimiento abierta
+      maintenanceOrders: {
+        none: { status: { in: ['pending', 'in_progress', 'waiting_parts', 'waiting_supplier'] } },
+      },
     },
     select: {
       id: true,

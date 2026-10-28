@@ -74,6 +74,22 @@ export async function createAssignmentAction(
     }
   }
 
+  // RN-ACT-10: no se puede asignar un activo con una orden de mantenimiento abierta
+  const openMaintenanceOrder = await prisma.maintenanceOrder.findFirst({
+    where: {
+      assetId: data.assetId,
+      status: { in: ['pending', 'in_progress', 'waiting_parts', 'waiting_supplier'] },
+    },
+    select: { orderNumber: true },
+    orderBy: { createdAt: 'asc' },
+  })
+  if (openMaintenanceOrder) {
+    return {
+      success: false,
+      error: `No se puede asignar: el activo tiene un mantenimiento abierto (folio ${openMaintenanceOrder.orderNumber}). Ciérralo antes de asignarlo.`,
+    }
+  }
+
   // RN-ASGN-01: verificar que no haya asignación activa
   const existingActive = await prisma.assetAssignment.findFirst({
     where: { assetId: data.assetId, returnedAt: null },

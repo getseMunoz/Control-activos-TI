@@ -263,6 +263,22 @@ export async function updateAssetAction(
           'No se puede dar de baja un activo con asignación activa. Registra primero la devolución.',
       }
     }
+
+    // RN-ACT-10: no se puede dar de baja un activo con mantenimiento abierto
+    const openMaintenanceOrder = await prisma.maintenanceOrder.findFirst({
+      where: {
+        assetId: data.id,
+        status: { in: ['pending', 'in_progress', 'waiting_parts', 'waiting_supplier'] },
+      },
+      select: { orderNumber: true },
+      orderBy: { createdAt: 'asc' },
+    })
+    if (openMaintenanceOrder) {
+      return {
+        success: false,
+        error: `No se puede dar de baja: el activo tiene un mantenimiento abierto (folio ${openMaintenanceOrder.orderNumber}). Ciérralo antes de darlo de baja.`,
+      }
+    }
   }
 
   // Soft delete handling

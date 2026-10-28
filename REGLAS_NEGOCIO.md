@@ -27,7 +27,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ACT-09 (futura):** se contempla que cada activo genere automáticamente un código QR único que codifique su código interno. El campo `qrCode` existe en el schema pero no se asigna en ningún flujo actual; no hay generación ni reimpresión de QR implementada.
 
-**RN-ACT-10:** Un activo en mantenimiento activo no puede asignarse ni darse de baja hasta que la orden de trabajo se cierre o cancele.
+**RN-ACT-10 (implementada):** Un activo con una orden de mantenimiento abierta (`pending`, `in_progress`, `waiting_parts` o `waiting_supplier` — los mismos estados que cuenta la tarjeta "Mantenimientos activos" del dashboard) no puede asignarse ni darse de baja hasta que la orden se cierre o cancele. Se valida con una consulta directa a `maintenance_orders` en el momento de asignar (`createAssignmentAction`) y de dar de baja (`updateAssetAction`), **no** a través del campo `status` del activo — un activo puede seguir mostrando `in_storage` aunque tenga una orden abierta, ya que abrir o cerrar una orden de mantenimiento no cambia automáticamente el estado del activo (ver RN-MNT-02 y RN-MNT-03). Además, el formulario de nueva asignación (`getAssignableAssets`) excluye directamente de la lista los activos con mantenimiento abierto, para que ni siquiera aparezcan como opción.
 
 **RN-ACT-11:** La fecha de compra de un activo no tiene restricción de "fecha de hoy": se permite registrar cualquier fecha pasada. A diferencia de la fecha de asignación y de devolución (ver RN-ASGN-11), este campo no está sujeto a la validación de día actual.
 
