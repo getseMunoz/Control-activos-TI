@@ -95,6 +95,16 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
               body { background: white !important; }
               .receipt-page { padding: 32px !important; max-width: 100% !important; }
             }
+            .signatures-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 24px;
+            }
+            @media (max-width: 480px) {
+              .signatures-grid {
+                grid-template-columns: 1fr;
+              }
+            }
           `,
         }}
       />
@@ -379,7 +389,7 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
           </p>
         </section>
 
-        {/* Firma de devolución */}
+        {/* Firmas */}
         <section style={{ marginBottom: '32px' }}>
           <h2
             style={{
@@ -392,53 +402,142 @@ export default async function AssignmentReturnReceiptPage({ params }: Props) {
               fontFamily: 'sans-serif',
             }}
           >
-            Firma de devolución
+            Firmas
           </h2>
 
-          {assignment.returnSignatureData ? (
-            <div style={{ fontFamily: 'sans-serif' }}>
-              <div
+          <div className="signatures-grid">
+            {/* Entrega el equipo (usuario) */}
+            <div>
+              <p
                 style={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  padding: '8px',
-                  background: '#fafafa',
-                  display: 'inline-block',
-                  marginBottom: '10px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#64748b',
+                  margin: '0 0 10px',
+                  fontFamily: 'sans-serif',
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={assignment.returnSignatureData}
-                  alt="Firma de devolución"
-                  style={{ display: 'block', maxWidth: '320px', height: 'auto' }}
-                />
-              </div>
-              <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
-                {assignment.returnSignedByName ?? `${user.firstName} ${user.lastName}`}
+                Entrega el equipo
               </p>
-              <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
-                Firmado el {fmt(assignment.returnSignedAt, true)}
-              </p>
+
+              {assignment.returnUserSignatureData ? (
+                <div style={{ fontFamily: 'sans-serif' }}>
+                  <div
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      background: '#fafafa',
+                      display: 'inline-block',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={assignment.returnUserSignatureData}
+                      alt="Firma de quien entrega el equipo"
+                      style={{ display: 'block', maxWidth: '280px', height: 'auto' }}
+                    />
+                  </div>
+                  <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
+                    {assignment.returnUserSignedByName ?? `${user.firstName} ${user.lastName}`}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
+                    Firmado el {fmt(assignment.returnUserSignedAt, true)}
+                  </p>
+                </div>
+              ) : assignment.returnRequiresUserSignature ? (
+                <div style={{ fontFamily: 'sans-serif' }}>
+                  <div
+                    style={{
+                      borderBottom: '1px solid #0f172a',
+                      width: '100%',
+                      maxWidth: '280px',
+                      marginBottom: '8px',
+                      height: '60px',
+                    }}
+                  />
+                  <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                    Pendiente de firma del usuario
+                  </p>
+                </div>
+              ) : (
+                <div style={{ fontFamily: 'sans-serif' }}>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                    No se requirió firma del usuario en esta devolución.
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div style={{ fontFamily: 'sans-serif' }}>
-              <div
+
+            {/* Recibe el equipo (Sistemas) */}
+            <div>
+              <p
                 style={{
-                  borderBottom: '1px solid #0f172a',
-                  width: '300px',
-                  marginBottom: '8px',
-                  height: '60px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#64748b',
+                  margin: '0 0 10px',
+                  fontFamily: 'sans-serif',
                 }}
-              />
-              <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
-                {user.firstName} {user.lastName}
+              >
+                Recibe el equipo (Sistemas)
               </p>
-              <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
-                Sin firma de devolución registrada
-              </p>
+
+              {assignment.returnSignatureData ? (
+                <div style={{ fontFamily: 'sans-serif' }}>
+                  <div
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      background: '#fafafa',
+                      display: 'inline-block',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={assignment.returnSignatureData}
+                      alt="Firma de devolución"
+                      style={{ display: 'block', maxWidth: '280px', height: 'auto' }}
+                    />
+                  </div>
+                  <p style={{ margin: '4px 0 2px', fontSize: '13px', fontWeight: '600' }}>
+                    {assignment.returnSignedByName ?? `${user.firstName} ${user.lastName}`}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#475569' }}>
+                    Firmado el {fmt(assignment.returnSignedAt, true)}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ fontFamily: 'sans-serif' }}>
+                  <div
+                    style={{
+                      borderBottom: '1px solid #0f172a',
+                      width: '100%',
+                      maxWidth: '280px',
+                      marginBottom: '8px',
+                      height: '60px',
+                    }}
+                  />
+                  <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '500' }}>
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                    Sin firma de devolución registrada
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </section>
 
         {/* Pie del documento */}
