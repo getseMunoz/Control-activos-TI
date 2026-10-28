@@ -340,6 +340,26 @@ Las siguientes funcionalidades están identificadas pero **no tienen fecha de im
 | MF-11 | Aplicación Móvil Nativa | App iOS/Android con escaneo QR y modo offline | Alternativa a evaluar solo si surge necesidad de campo real |
 | MF-12 | Integración con ERP / Contabilidad | Exportación de depreciación y gastos al sistema contable | Depende de MF-03 |
 
+### Hallazgos de auditoría (deuda técnica, sin fecha)
+
+Pendientes identificados en una auditoría de seguridad/calidad posterior a v1.0, verificados contra el código real. No son funcionalidades de negocio nuevas, sino correcciones y decisiones técnicas pendientes.
+
+| ID | Hallazgo | Acción propuesta | Prioridad sugerida |
+|---|---|---|:---:|
+| AUD-01 | `npm audit` reporta 29 vulnerabilidades (5 críticas, 17 altas, 6 moderadas, 1 baja), todas en dependencias transitivas de desarrollo/build (Next.js, Prisma, ESLint, Tailwind, etc.) | Planificar actualización de dependencias y volver a correr `npm audit` tras cada actualización mayor | Media |
+| AUD-02 | `@auth/prisma-adapter`, `react-hook-form` y `@hookform/resolvers` están instaladas en `package.json` sin ningún uso real en el código | Quitarlas, o implementarlas si en algún momento se decide usarlas | Baja |
+| AUD-03 | `Location.name` no tiene `@unique` real en PostgreSQL — solo un chequeo manual en el Server Action, con riesgo de duplicados en condición de carrera | Agregar `@unique` al campo y su migración correspondiente | Media |
+| AUD-04 | `createUserAction` no captura el error `P2002` (colisión de email concurrente) — a diferencia de otros Server Actions que sí lo hacen | Agregar `try/catch` con manejo del error de duplicado | Baja |
+| AUD-05 | `Asset.purchasePrice` no valida signo (rechazar negativos) en el servidor, a diferencia de `cost` en gastos y mantenimiento | Agregar validación de número no negativo en `assets.actions.ts` | Baja |
+| AUD-06 | Las firmas (entrega y las dos de devolución) solo validan el prefijo `data:image/png;base64,` y el tamaño, no que el contenido sea un PNG real decodificable | Agregar validación real del contenido de la imagen antes de persistir | Baja |
+| AUD-07 | No existen `CHECK` constraints en ninguna tabla de la base de datos; toda regla de rango/signo depende solo del código de la aplicación | Evaluar agregar `CHECK` constraints para las reglas más críticas (montos no negativos, fechas coherentes) | Media |
+| AUD-08 | `isSessionUserValid()`, usada en `/api/auth/force-logout`, no tiene `try/catch` ante una eventual caída de la base de datos | Agregar manejo de error con degradación controlada | Baja |
+| AUD-09 | `ADMIN_ONLY_PREFIXES` en `src/proxy.ts` incluye `/audit` y `/alerts`, prefijos que no corresponden a ninguna ruta real implementada | Quitar los prefijos no usados, o dejarlos si se retoman las Épicas 8 (Alertas) y 11 (Auditoría) | Baja |
+| AUD-10 | `Asset.biosPassword`/`devicePassword` no tienen implementado el cifrado AES-256-GCM que un comentario anterior del schema sugería como ya existente | Si en el futuro se usan estos campos, implementar cifrado real antes de persistir cualquier valor (ver nota corregida en `prisma/schema.prisma` y en `MODELO_BASE_DATOS.md` §2.4) | Media (solo si se activa la funcionalidad) |
+| AUD-11 | Existen modelos y campos sin ninguna implementación real: `MaintenanceSchedule`, `Document`, y los campos heredados de `AssetAssignment` (`signedAt`, `signaturePath`, `signatureIp`, `deliveryDocumentId`, `returnDocumentId`) | Decidir si se implementan (ver Épicas 4, 7 y RN-DOC en `REGLAS_NEGOCIO.md`) o se eliminan del schema en una futura migración de limpieza | Baja |
+
+---
+
 ### Política de versiones
 
 | Tipo | Cuándo | Ejemplo | Requiere migración |

@@ -219,9 +219,11 @@ model Asset {
   invoiceNumber      String?     @map("invoice_number")
   warrantyExpiryDate DateTime?   @map("warranty_expiry_date")
   usefulLifeYears    Int?        @map("useful_life_years")
-  // SEGURIDAD: cifrados con AES-256-GCM antes de persistir (clave en ENCRYPTION_KEY).
-  // Acceso exclusivo de admin_ti. Nunca enviar al frontend para usuario_final.
-  // Toda consulta o modificación debe registrarse en AuditLog (acción UPDATE / EXPORT).
+  // NOTA (corregida tras auditoría): estos campos no están en uso en el código actual —
+  // ninguna Server Action ni query los lee o escribe. El cifrado AES-256-GCM que un
+  // comentario anterior describía aquí como vigente NO está implementado; no existe
+  // ENCRYPTION_KEY en el proyecto. Si en el futuro se usan, implementar cifrado real
+  // antes de persistir cualquier valor.
   biosPassword       String?     @map("bios_password")
   devicePassword     String?     @map("device_password")
   // Identificadores adicionales de inventario

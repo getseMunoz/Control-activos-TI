@@ -293,7 +293,8 @@ Un PR con CI fallido no debe mergearse.
 - Asignaciones de activos a usuarios (el Administrador TI crea la asignación sin firma)
 - Firma digital de recepción por el propio Usuario Final desde `/my-assets` (dibujo en canvas, guardado como PNG Data URL), una vez que el equipo le fue asignado
 - Registro de devoluciones firmado por el Administrador TI que recibe físicamente el equipo (nombre resuelto en servidor desde su propia sesión)
-- Responsiva de entrega y de devolución: páginas HTML imprimibles con folio (no PDF generado en servidor)
+- Doble firma en la devolución: además de la firma del Administrador TI, el propio Usuario Final firma desde su portal (`/my-assets/assignments/[assignmentId]/sign-return`) que entregó el equipo; las devoluciones registradas antes de esta funcionalidad no la requieren
+- Responsiva de entrega y de devolución: páginas HTML imprimibles con folio (no PDF generado en servidor); la de devolución muestra ambas firmas por separado ("Entrega el equipo" / "Recibe el equipo")
 - Historial completo por activo (asignaciones, incidencias, mantenimiento, gastos)
 - Incidencias por activo (creación, seguimiento, resolución)
 - Órdenes de mantenimiento preventivo y correctivo
@@ -314,11 +315,12 @@ Un PR con CI fallido no debe mergearse.
 4. El sistema guarda la firma (PNG en Base64) y resuelve el nombre del firmante desde su propio registro en la base de datos — nunca desde el cliente.
 5. Puede consultar su responsiva en `/assignments/[id]/receipt`.
 
-**Devolución:**
-1. El Administrador TI abre `/assignments/[id]/return`, registra la fecha de devolución y notas opcionales.
+**Devolución (doble firma):**
+1. El Administrador TI abre `/assignments/[id]/return`, registra la fecha de devolución (debe ser la fecha de hoy) y notas opcionales.
 2. Firma como responsable de TI que recibe físicamente el equipo (mismo mecanismo de canvas).
-3. El sistema resuelve el nombre del firmante desde la sesión del propio Administrador TI, no desde el usuario que tenía el equipo asignado.
-4. El activo regresa a `in_storage`; la responsiva de devolución queda disponible en `/assignments/[id]/return-receipt`.
+3. El sistema resuelve el nombre del firmante desde la sesión del propio Administrador TI, no desde el usuario que tenía el equipo asignado. El activo regresa a `in_storage` en este paso.
+4. El Usuario Final ve en `/my-assets` un pendiente "Firma de devolución" y firma su propia entrega desde `/my-assets/assignments/[assignmentId]/sign-return`.
+5. La responsiva de devolución (`/assignments/[id]/return-receipt`) muestra ambas firmas. Las devoluciones registradas antes de que existiera esta segunda firma no la requieren ni la muestran como pendiente.
 
 **Reporte de falla (Usuario Final):**
 1. El Usuario Final entra a `/my-assets` y selecciona uno de sus equipos asignados.
@@ -342,7 +344,7 @@ Un PR con CI fallido no debe mergearse.
 | Gastos | `/assets/[id]/expenses/new` | admin_ti |
 | Reportes | `/reports` | admin_ti |
 | Administración | `/admin/users`, `/admin/locations`, `/admin/asset-types` | admin_ti |
-| Portal usuario final | `/my-assets`, `/my-assets/[assetId]/incidents/new`, `/my-assets/assignments/[assignmentId]/sign` | usuario_final |
+| Portal usuario final | `/my-assets`, `/my-assets/[assetId]/incidents/new`, `/my-assets/assignments/[assignmentId]/sign`, `/my-assets/assignments/[assignmentId]/sign-return` | usuario_final |
 | Guía rápida | `/help` | todos |
 
 ---

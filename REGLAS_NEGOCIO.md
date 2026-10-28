@@ -1,6 +1,6 @@
 # REGLAS DE NEGOCIO
 ## Sistema de Gestión de Activos TI — CIPRIJAL
-**Versión:** 1.0
+**Versión:** 1.1
 **Fecha:** 2026-06-26
 
 Este documento centraliza todas las reglas de negocio del sistema. Cada regla tiene un identificador único. Las marcadas como **(innegociable)** no pueden cambiarse sin aprobación formal del responsable de TI de CIPRIJAL.
@@ -29,6 +29,8 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ACT-10:** Un activo en mantenimiento activo no puede asignarse ni darse de baja hasta que la orden de trabajo se cierre o cancele.
 
+**RN-ACT-11:** La fecha de compra de un activo no tiene restricción de "fecha de hoy": se permite registrar cualquier fecha pasada. A diferencia de la fecha de asignación y de devolución (ver RN-ASGN-11), este campo no está sujeto a la validación de día actual.
+
 ---
 
 ## RN-ASGN — Asignaciones (Préstamos y Custodia)
@@ -49,11 +51,15 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ASGN-07-B:** La devolución la firma el Administrador TI que recibe físicamente el equipo, con el mismo mecanismo de canvas/PNG Base64 (campo `returnSignatureData`). El nombre del firmante se resuelve desde la sesión del Administrador TI autenticado contra la base de datos — nunca desde el nombre del usuario al que estaba asignado el equipo ni desde un valor enviado por el cliente. El campo `returnedBy` registra al Administrador TI que recibió la devolución.
 
+**RN-ASGN-07-C:** Además de la firma del Administrador TI, el propio Usuario Final que entregó el equipo debe firmar la devolución desde su portal (`/my-assets/assignments/[assignmentId]/sign-return`), una vez que el Administrador TI ya registró la devolución. Es el mismo mecanismo de canvas/PNG Base64 (campo `returnUserSignatureData`), con el nombre del firmante resuelto en servidor desde su propio registro de usuario. El campo `returnRequiresUserSignature` indica si esta segunda firma aplica: es `true` para toda devolución registrada desde que existe esta funcionalidad, y `false` para las devoluciones anteriores (que no requieren ni muestran esta segunda firma como pendiente). La responsiva de devolución muestra ambas firmas por separado: "Entrega el equipo" (Usuario Final) y "Recibe el equipo (Sistemas)" (Administrador TI); en devoluciones antiguas, la sección del usuario indica que no se requirió, nunca un error.
+
 **RN-ASGN-08:** Una vez firmada una asignación (recepción o devolución), los campos de firma no se sobrescriben. No existe en el sistema actual un flujo de "nueva firma" sobre una asignación ya firmada.
 
 **RN-ASGN-09:** El historial completo de asignaciones de un activo es inmutable. Ningún usuario puede editar o eliminar registros históricos de asignaciones.
 
 **RN-ASGN-10:** Si se intenta desactivar un Usuario Final que tiene asignaciones activas, el sistema **bloquea la desactivación** con un mensaje que indica el número de equipos pendientes (no una lista detallada ni un sistema de alertas dedicado). El Administrador TI debe registrar las devoluciones antes de poder desactivar al usuario.
+
+**RN-ASGN-11:** La fecha de asignación y la fecha de devolución deben ser exactamente la fecha del día en que se realiza el registro, en zona horaria de México (`America/Mexico_City`). No se permite seleccionar una fecha anterior ni posterior; la validación se aplica tanto en el formulario (atributos `min`/`max` del campo de fecha) como en el Server Action correspondiente, comparando contra el valor calculado en servidor.
 
 ---
 
@@ -65,7 +71,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-USR-03:** No se puede eliminar físicamente un usuario del sistema. Solo se puede desactivar (`is_active = false`). El historial de acciones del usuario se conserva en `audit_logs`.
 
-**RN-USR-04 (innegociable):** No se puede desactivar un usuario que tiene asignaciones activas sin antes reasignar o devolver todos sus equipos. El sistema bloquea la desactivación si existen asignaciones pendientes.
+**RN-USR-04 (innegociable):** No se puede desactivar un usuario que tiene asignaciones activas sin antes reasignar o devolver todos sus equipos. El sistema bloquea la desactivación si existen asignaciones pendientes. Esta misma regla también bloquea la desactivación si el usuario tiene una devolución ya registrada por el Administrador TI pero con su propia firma de entrega (`returnUserSignatureData`, ver RN-ASGN-07-C) todavía pendiente — debe firmarla antes de poder ser desactivado.
 
 **RN-USR-05:** El email de cada usuario debe ser único en el sistema. No puede haber dos cuentas con el mismo correo electrónico, ni siquiera si una está desactivada.
 
@@ -76,6 +82,8 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 **RN-USR-08:** Las contraseñas se almacenan como hash bcrypt (cost factor mínimo 12). Nunca se almacena la contraseña en texto claro.
 
 **RN-USR-09:** Las contraseñas deben cumplir: mínimo 8 caracteres, al menos 1 letra mayúscula, 1 número y 1 carácter especial.
+
+**RN-USR-10:** El teléfono es un campo opcional; puede quedar vacío. Si se captura, debe tener exactamente 10 dígitos numéricos, sin letras, espacios ni símbolos. La validación se aplica tanto en el formulario como en el servidor.
 
 ---
 

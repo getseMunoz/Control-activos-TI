@@ -39,7 +39,9 @@ Cada celda indica si la acción está permitida para ese rol: "Sí", "No" o "Sol
 | **Firmar la devolución como responsable de TI que recibe el equipo** (nombre resuelto desde su propia sesión/BD) | Sí | No |
 | **Ver mis equipos asignados actualmente** | Sí | Sí |
 | **Firmar la recepción de mi propio equipo** (desde `/my-assets`, solo si está pendiente de firma; nombre resuelto desde BD, no del cliente) | No | Solo propios |
+| **Firmar la devolución como quien entrega el equipo** (desde `/my-assets/assignments/[assignmentId]/sign-return`, solo si la devolución ya fue registrada por el Administrador TI y la firma del usuario sigue pendiente; nombre resuelto desde BD, no del cliente) | No | Solo propios |
 | **Consultar mi responsiva de entrega firmada** (página HTML imprimible) | Sí | Solo propios |
+| **Consultar mi responsiva de devolución** (muestra ambas firmas: Usuario Final y Administrador TI) | Sí | Solo propios |
 
 > **Nota:** no se genera ningún PDF automático — la responsiva es una página HTML imprimible vía el navegador.
 
@@ -161,7 +163,7 @@ La verificación de permisos ocurre en **tres niveles independientes** (defensa 
 
 1. **`src/proxy.ts` (antes de cualquier página):** Verifica que existe sesión válida y bloquea acceso a rutas de `admin_ti` si el rol es `usuario_final`. En Next.js 16 este archivo reemplaza al antiguo `middleware.ts`.
 
-2. **Server Actions (servidor):** Cada mutación sensible llama a `requireAdminTI()` o `requireAuthenticatedUser()` (los únicos helpers reutilizables en `src/lib/auth.ts`) antes de ejecutar cualquier lógica. No existe un helper `requireOwnership()` genérico — la verificación de que un recurso pertenece al usuario autenticado se hace de forma explícita dentro de cada acción, comparando el `id` de sesión contra el dueño del registro (por ejemplo, `assignment.userId !== session.user.id` en `signDeliveryAction`).
+2. **Server Actions y páginas protegidas (servidor):** Cada mutación sensible y la mayoría de páginas que muestran datos sensibles llaman a `requireAdminTI()` o `requireAuthenticatedUser()` (los únicos helpers reutilizables en `src/lib/auth.ts`) antes de ejecutar cualquier lógica. Estas dos funciones no solo leen el token de sesión (JWT): también vuelven a consultar la base de datos en cada llamada, mediante `isSessionUserValid()`, para confirmar que el usuario sigue existiendo, activo, no eliminado y con el mismo rol que tiene en el token. Si la verificación falla (usuario desactivado, eliminado, o con el rol cambiado mientras la sesión seguía abierta), se redirige a `/api/auth/force-logout`, una ruta dedicada que cierra la sesión de verdad (invalida la cookie con `signOut()`) y manda a `/login?sessionInvalid=1` con el mensaje "Tu sesión ya no es válida. Por favor, inicia sesión de nuevo." Esa misma ruta, si la sesión sigue siendo válida, no cierra nada — simplemente redirige a la página principal del usuario, para que no pueda usarse para desloguear a otra persona con un enlace. No existe un helper `requireOwnership()` genérico — la verificación de que un recurso pertenece al usuario autenticado se hace de forma explícita dentro de cada acción o página, comparando el `id` ya revalidado contra el dueño del registro (por ejemplo, `assignment.userId !== user.id` en `signDeliveryAction` y en las páginas de responsiva de entrega/devolución).
 
 3. **UI (cliente):** Los botones y enlaces que un rol no tiene permitido simplemente no se renderizan. Esto es una mejora de UX, no de seguridad — la seguridad real está en los niveles 1 y 2.
 

@@ -10,7 +10,7 @@
 ## 1. PRINCIPIOS DEL MODELO
 
 - **UUID v4 como PK:** todos los modelos usan `id String @id @default(uuid())`. Nunca autoincrement — evita la enumeración de recursos en la API.
-- **Fechas en UTC:** todo campo `DateTime` de Prisma se almacena en PostgreSQL como `TIMESTAMPTZ` (con zona horaria, en UTC). La conversión a hora local, si se necesita, ocurre en la aplicación.
+- **Fechas en UTC, con tratamiento explícito para fechas-calendario:** todo campo `DateTime` de Prisma se almacena en PostgreSQL como `TIMESTAMPTZ` (en UTC). Los campos que representan un día calendario sin hora (`assignedAt`, `returnedAt`, `purchaseDate`, etc.), capturados desde un `<input type="date">`, se guardan como medianoche UTC del día seleccionado — por eso la aplicación centraliza su manejo en `src/lib/dates.ts`: `formatDate()` fuerza `timeZone: 'UTC'` al mostrarlos (evita que se recorran un día en zonas horarias negativas como `America/Mexico_City`), y `getTodayMexico()` calcula la fecha de "hoy" en zona horaria de México sin pasar por `toISOString()` (que daría el día siguiente en horario vespertino). Los timestamps con hora realmente significativa (firmas, `createdAt`/`updatedAt`, bloqueo de login) siguen formateándose en hora local, sin forzar UTC.
 - **snake_case en BD, camelCase en Prisma:** los campos y tablas se mapean con `@map()` / `@@map()`. El cliente de Prisma expone siempre camelCase.
 - **Soft delete selectivo, no universal:** cada modelo usa el mecanismo que corresponde a su naturaleza — ver sección 3.
 - **`audit_logs` es de solo inserción:** el modelo existe para ese propósito, independientemente de si algo escribe en él hoy (ver sección 6).
@@ -126,10 +126,14 @@ Historial de asignaciones. Cada fila es un ciclo entrega → devolución. `retur
 | **deliverySignatureData** | String? `@db.Text` | Firma de **recepción**, imagen PNG como Data URL / Base64 inline |
 | **deliverySignedAt** | DateTime? | `NULL` = pendiente de firma |
 | **deliverySignedByName** | String? | Nombre del firmante, resuelto en servidor desde la BD del usuario autenticado — nunca desde un valor del cliente |
-| **returnSignatureData** | String? `@db.Text` | Firma de **devolución**, mismo formato (PNG Base64 inline) |
+| **returnSignatureData** | String? `@db.Text` | Firma de **devolución**, de quien **recibe** el equipo (Administrador TI / Sistemas), mismo formato (PNG Base64 inline) |
 | **returnSignedAt** | DateTime? | |
 | **returnSignedByName** | String? | Nombre del Administrador TI que recibió el equipo, resuelto desde su propia sesión — nunca desde el nombre del usuario al que estaba asignado el activo |
-| signedAt, signaturePath, signatureIp | DateTime? / String? / String? | **Campos heredados sin uso actual.** Existen en el schema pero ninguna Server Action los lee ni escribe; el mecanismo de firma real son los seis campos `delivery*`/`return*` de arriba |
+| **returnUserSignatureData** | String? `@db.Text` | Segunda firma de devolución, de quien **entrega** el equipo (Usuario Final), mismo formato (PNG Base64 inline) |
+| **returnUserSignedAt** | DateTime? | `NULL` = pendiente de firma del usuario (solo relevante si `returnRequiresUserSignature = true`) |
+| **returnUserSignedByName** | String? | Nombre del Usuario Final que entrega, resuelto en servidor desde su propia sesión |
+| **returnRequiresUserSignature** | Boolean | `@default(false)` — `true` únicamente en devoluciones registradas desde que existe esta segunda firma; las devoluciones anteriores quedan en `false` y nunca se muestran como pendientes de esta firma |
+| signedAt, signaturePath, signatureIp | DateTime? / String? / String? | **Campos heredados sin uso actual.** Existen en el schema pero ninguna Server Action los lee ni escribe; el mecanismo de firma real son los diez campos `delivery*`/`return*`/`returnUser*` de arriba, más el indicador `returnRequiresUserSignature` |
 | deliveryDocumentId / returnDocumentId | String? | FK conceptual → `Document` (gestionada por la aplicación, sin relación Prisma); el módulo `Document` no tiene implementación — ver sección 6 |
 | createdAt | DateTime | |
 
@@ -146,9 +150,11 @@ WHERE returned_at IS NULL;
 Esto evita que un activo tenga dos asignaciones activas simultáneas.
 
 **Flujo real `Asset` ↔ `AssetAssignment`:**
-1. El Administrador TI crea la asignación **sin firma** (`deliverySignatureData`/`deliverySignedAt`/`deliverySignedByName` quedan en `null`). El activo pasa de `in_storage` a `assigned`.
+1. El Administrador TI crea la asignación **sin firma** (`deliverySignatureData`/`deliverySignedAt`/`deliverySignedByName` quedan en `null`). El activo pasa de `in_storage` a `assigned`. La fecha de asignación debe ser la fecha del día en zona horaria de México (ver RN-ASGN-11 en `REGLAS_NEGOCIO.md`).
 2. El Usuario Final, desde `/my-assets/assignments/[assignmentId]/sign`, firma su propia recepción dibujando en un canvas. La imagen se guarda como PNG en Base64 en `deliverySignatureData`, con `deliverySignedAt = now()` y `deliverySignedByName` tomado de su propio registro en `User`.
-3. Al devolver el equipo, el Administrador TI que lo recibe físicamente firma la devolución (mismo mecanismo, campos `return*`). El activo regresa a `in_storage`.
+3. Al devolver el equipo (fecha también restringida al día en curso), el Administrador TI que lo recibe físicamente firma la devolución (mismo mecanismo, campos `return*`). El activo regresa a `in_storage` y `returnRequiresUserSignature` se marca en `true`.
+4. El Usuario Final, desde `/my-assets/assignments/[assignmentId]/sign-return` (disponible solo si `returnRequiresUserSignature = true` y `returnUserSignedAt` es `NULL`), firma su propia entrega del equipo. Esta firma **no** vuelve a cambiar el estado del activo — ya regresó a `in_storage` en el paso 3.
+5. La responsiva de devolución (`/assignments/[id]/return-receipt`) muestra ambas firmas por separado: "Entrega el equipo" (Usuario Final) y "Recibe el equipo (Sistemas)" (Administrador TI). En devoluciones registradas antes de que existiera esta segunda firma (`returnRequiresUserSignature = false`), la sección del usuario indica que no se requirió, nunca un error.
 
 ---
 

@@ -1,6 +1,6 @@
 # ARQUITECTURA DEL SISTEMA
 ## Sistema de Gestión de Activos TI — CIPRIJAL
-**Versión:** 2.0
+**Versión:** 2.1
 **Fecha:** 2026-06-25
 **Estado:** Definitivo — stack aprobado
 
@@ -156,15 +156,20 @@ ciprijal-activos-ti/
 │   │   │   ├── my-assets/                   → Portal usuario_final
 │   │   │   │   ├── page.tsx
 │   │   │   │   ├── [assetId]/incidents/new/page.tsx
-│   │   │   │   └── assignments/[assignmentId]/sign/page.tsx → Firma de recepción
+│   │   │   │   └── assignments/[assignmentId]/
+│   │   │   │       ├── sign/page.tsx         → Firma de recepción
+│   │   │   │       └── sign-return/page.tsx  → Firma de entrega al devolver (segunda firma)
 │   │   │   └── help/page.tsx
 │   │   │
 │   │   │   (alerts/, audit/, profile/, incidents/ e maintenance/ de nivel superior
 │   │   │    existen como carpetas reservadas, sin page.tsx — no son rutas activas)
 │   │   │
 │   │   └── api/                   → Route Handlers
-│   │       └── auth/[...nextauth]/route.ts  → Único endpoint HTTP de negocio;
-│   │                                           el resto del CRUD es Server Actions
+│   │       └── auth/
+│   │           ├── [...nextauth]/route.ts   → Login/logout de NextAuth;
+│   │           │                               el resto del CRUD es Server Actions
+│   │           └── force-logout/route.ts    → Cierra sesión si ya no es válida
+│   │                                           contra la BD (ver §5.2)
 │   │
 │   ├── components/
 │   │   ├── ui/                    → Componentes shadcn/ui (código propio)
@@ -258,6 +263,17 @@ Acceso a la sesión en el servidor (NextAuth v5 / Auth.js):
 
 En logout:
    NextAuth invalida la cookie. No requiere operación en base de datos.
+
+Revalidación de sesión contra la base de datos:
+   Además de leer el JWT, requireAuthenticatedUser()/requireAdminTI() (src/lib/auth.ts)
+   vuelven a consultar la base de datos en cada llamada (isSessionUserValid()) para
+   confirmar que el usuario sigue existiendo, activo, no eliminado y con el mismo rol
+   que tiene en el token. Si la verificación falla, se redirige a
+   /api/auth/force-logout, que cierra la sesión de verdad (signOut()) y manda a
+   /login?sessionInvalid=1. Esto evita que un usuario desactivado, eliminado o con el
+   rol cambiado conserve acceso mientras su sesión JWT siga vigente — un riesgo real
+   detectado en una auditoría posterior a la v2.0, dado que el JWT por sí solo no se
+   revalida contra la base de datos en cada petición.
 ```
 
 ### 5.3 Autorización por Rol y Propiedad
@@ -273,14 +289,23 @@ La verificación de autorización ocurre en **dos niveles**:
 - Los únicos dos helpers reutilizables en `src/lib/auth.ts` son:
 
 ```typescript
-// Lanza error si no hay sesión o el usuario no es admin_ti
+// Lanza error si no hay sesión o el token dice que el rol no es admin_ti.
+// Si hay sesión pero isSessionUserValid() falla contra la BD (usuario desactivado,
+// eliminado, o con rol distinto al del token), redirige a /api/auth/force-logout.
 async function requireAdminTI(): Promise<{ id, email, role }>
 
-// Lanza error si no hay sesión válida
+// Lanza error si no hay sesión. Igual que arriba, revalida contra la BD con
+// isSessionUserValid() y redirige a /api/auth/force-logout si ya no es válida.
 async function requireAuthenticatedUser(): Promise<{ id, email, role }>
+
+// Verificación compartida contra la base de datos, usada por las dos funciones
+// de arriba y por la propia ruta /api/auth/force-logout.
+async function isSessionUserValid(userId: string, tokenRole: Role): Promise<boolean>
 ```
 
-No existe un helper `requireOwnership()` genérico. La verificación de que un recurso pertenece al usuario autenticado se hace de forma explícita dentro de cada Server Action o página, comparando el `id` de sesión contra el dueño del registro — por ejemplo, en `signDeliveryAction` (`src/server/actions/assignments.actions.ts`): `if (assignment.userId !== sessionUser.id) return { success: false, ... }`. Estas verificaciones se hacen al inicio de cada Server Action que manipule datos sensibles. La seguridad **no depende** de si el botón es visible en el frontend.
+No existe un helper `requireOwnership()` genérico. La verificación de que un recurso pertenece al usuario autenticado se hace de forma explícita dentro de cada Server Action o página, comparando el `id` ya revalidado contra el dueño del registro — por ejemplo, en `signDeliveryAction` (`src/server/actions/assignments.actions.ts`): `if (assignment.userId !== sessionUser.id) return { success: false, ... }`. Estas verificaciones se hacen al inicio de cada Server Action que manipule datos sensibles. La seguridad **no depende** de si el botón es visible en el frontend.
+
+**`/api/auth/force-logout` (`src/app/api/auth/force-logout/route.ts`):** ruta de servidor dedicada, excluida explícitamente del `matcher` de `src/proxy.ts` (cualquier ruta bajo `api/auth` queda fuera de la intercepción del middleware). No llama a `requireAuthenticatedUser()`/`requireAdminTI()` — llama a `auth()` e `isSessionUserValid()` directamente, para evitar un bucle de redirecciones. Si el usuario sigue siendo válido, redirige a su página principal **sin cerrar la sesión**; si no, cierra la sesión con `signOut({ redirectTo: '/login?sessionInvalid=1' })`.
 
 Todos los Server Actions validan sus datos de entrada con esquemas de Zod antes de tocar la base de datos — es una convención consistente en todo `src/server/actions/`, no solo en los módulos sensibles.
 
@@ -327,13 +352,15 @@ El modelo `AuditLog` existe en `prisma/schema.prisma` como tabla de solo inserci
 /assignments, /assignments/new               → Gestión de asignaciones (admin_ti)
 /assignments/[id]/receipt                    → Responsiva de entrega (admin_ti + usuario_final propietario)
 /assignments/[id]/return                     → Registrar devolución, firmada por el admin que recibe (admin_ti)
-/assignments/[id]/return-receipt             → Responsiva de devolución (admin_ti + usuario_final propietario)
+/assignments/[id]/return-receipt             → Responsiva de devolución, con ambas firmas (admin_ti + usuario_final propietario)
 /assignments/export                          → Exportación CSV de asignaciones (admin_ti)
 /reports                                     → Dashboard de reportes (admin_ti)
 /admin/users, /admin/locations, /admin/asset-types → Catálogos y usuarios (admin_ti)
 /my-assets                                   → Portal del usuario_final: sus equipos, firma pendiente, incidencias
 /my-assets/[assetId]/incidents/new           → Reportar falla (usuario_final)
 /my-assets/assignments/[assignmentId]/sign   → Firmar recepción del propio equipo (usuario_final)
+/my-assets/assignments/[assignmentId]/sign-return → Firmar la entrega al devolver (usuario_final, solo si la
+                                                devolución ya fue registrada y la firma sigue pendiente)
 /help                                        → Guía rápida interna (cualquier rol)
 ```
 
