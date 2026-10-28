@@ -224,13 +224,35 @@ export default async function DashboardPage() {
     { label: 'Total de activos', value: summary.totalAssets, accent: '#0f172a' },
     { label: 'En almacén', value: summary.inStorageAssets, accent: '#2563eb' },
     { label: 'Asignados', value: summary.assignedAssets, accent: '#7c3aed' },
-    { label: 'En mantenimiento', value: summary.inMaintenanceAssets, accent: '#d97706' },
     { label: 'Incidencias activas', value: summary.activeIncidents, accent: '#dc2626' },
     { label: 'Mantenimientos activos', value: summary.activeMaintenanceOrders, accent: '#059669' },
   ]
 
   return (
     <div style={{ padding: '32px', maxWidth: '1200px' }}>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .dashboard-stats-grid {
+              display: grid;
+              grid-template-columns: repeat(1, 1fr);
+              gap: 12px;
+              margin-bottom: 12px;
+            }
+            @media (min-width: 640px) {
+              .dashboard-stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+              }
+            }
+            @media (min-width: 1024px) {
+              .dashboard-stats-grid {
+                grid-template-columns: repeat(5, 1fr);
+              }
+            }
+          `,
+        }}
+      />
+
       {/* Encabezado */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '600', color: '#0f172a', margin: 0 }}>
@@ -242,14 +264,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Tarjetas de resumen */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '12px',
-          marginBottom: '12px',
-        }}
-      >
+      <div className="dashboard-stats-grid">
         {stats.map(({ label, value, accent }) => (
           <div key={label} style={cardStyle}>
             <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 6px 0' }}>{label}</p>

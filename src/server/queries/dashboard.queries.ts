@@ -5,7 +5,6 @@ export async function getDashboardSummary() {
     totalAssets,
     inStorageAssets,
     assignedAssets,
-    inMaintenanceAssets,
     activeIncidents,
     activeMaintenanceOrders,
     expensesAggregate,
@@ -16,7 +15,6 @@ export async function getDashboardSummary() {
     prisma.asset.count({ where: { deletedAt: null } }),
     prisma.asset.count({ where: { deletedAt: null, status: 'in_storage' } }),
     prisma.asset.count({ where: { deletedAt: null, status: 'assigned' } }),
-    prisma.asset.count({ where: { deletedAt: null, status: 'in_maintenance' } }),
     prisma.incident.count({
       where: {
         status: { in: ['open', 'in_review', 'in_progress'] },
@@ -86,7 +84,6 @@ export async function getDashboardSummary() {
     totalAssets,
     inStorageAssets,
     assignedAssets,
-    inMaintenanceAssets,
     activeIncidents,
     activeMaintenanceOrders,
     totalExpenses: Number(expensesAggregate._sum.cost ?? 0),
