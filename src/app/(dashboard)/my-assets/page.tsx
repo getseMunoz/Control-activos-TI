@@ -351,29 +351,25 @@ export default async function MyAssetsPage() {
                         >
                           Responsiva
                         </Link>
-                        <Link
-                          href={`/assignments/${a.id}/return-receipt`}
-                          style={{ fontSize: '12px', color: '#7c3aed', textDecoration: 'none' }}
-                        >
-                          Resp. devolución
-                        </Link>
-                        {a.returnRequiresUserSignature && !a.returnUserSignedAt && (
-                          <>
-                            <span style={{ fontSize: '12px', color: '#dc2626' }}>
-                              Pendiente de firma de devolución
-                            </span>
-                            <Link
-                              href={`/my-assets/assignments/${a.id}/sign-return`}
-                              style={{
-                                fontSize: '12px',
-                                color: '#0f172a',
-                                fontWeight: 500,
-                                textDecoration: 'none',
-                              }}
-                            >
-                              Firmar devolución
-                            </Link>
-                          </>
+                        {a.returnRequiresUserSignature && !a.returnUserSignedAt ? (
+                          <Link
+                            href={`/my-assets/assignments/${a.id}/sign-return`}
+                            style={{
+                              fontSize: '12px',
+                              color: '#dc2626',
+                              fontWeight: 600,
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            Pendiente de firma de devolución
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/assignments/${a.id}/return-receipt`}
+                            style={{ fontSize: '12px', color: '#7c3aed', textDecoration: 'none' }}
+                          >
+                            Resp. devolución
+                          </Link>
                         )}
                       </div>
                     </td>
