@@ -177,6 +177,22 @@ export async function updateUserAction(
         error: `No se puede desactivar: el usuario tiene ${activeCount} equipo(s) asignado(s). Primero registre la devolución.`,
       }
     }
+
+    // RN-USR-04 (extensión): bloquear si tiene devoluciones con firma del usuario pendiente
+    const pendingReturnSignatureCount = await prisma.assetAssignment.count({
+      where: {
+        userId: data.id,
+        returnedAt: { not: null },
+        returnRequiresUserSignature: true,
+        returnUserSignedAt: null,
+      },
+    })
+    if (pendingReturnSignatureCount > 0) {
+      return {
+        success: false,
+        error: `No se puede desactivar: el usuario tiene ${pendingReturnSignatureCount} devolución(es) pendiente(s) de firma.`,
+      }
+    }
   }
 
   await prisma.user.update({
@@ -232,6 +248,22 @@ export async function deactivateUserAction(userId: string): Promise<ActionResult
     return {
       success: false,
       error: `No se puede desactivar: el usuario tiene ${activeCount} equipo(s) asignado(s). Primero registre la devolución.`,
+    }
+  }
+
+  // RN-USR-04 (extensión): bloquear si tiene devoluciones con firma del usuario pendiente
+  const pendingReturnSignatureCount = await prisma.assetAssignment.count({
+    where: {
+      userId,
+      returnedAt: { not: null },
+      returnRequiresUserSignature: true,
+      returnUserSignedAt: null,
+    },
+  })
+  if (pendingReturnSignatureCount > 0) {
+    return {
+      success: false,
+      error: `No se puede desactivar: el usuario tiene ${pendingReturnSignatureCount} devolución(es) pendiente(s) de firma.`,
     }
   }
 

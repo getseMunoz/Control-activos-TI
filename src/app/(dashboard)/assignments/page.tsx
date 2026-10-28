@@ -322,6 +322,7 @@ export default async function AssignmentsPage({ searchParams }: Props) {
                     'Estado',
                     'Firma entrega',
                     'Firma devol.',
+                    'Firma usuario (devol.)',
                     '',
                   ].map((h) => (
                     <th
@@ -415,11 +416,24 @@ export default async function AssignmentsPage({ searchParams }: Props) {
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                         {a.returnedAt === null ? (
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>Pendiente</span>
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>—</span>
                         ) : a.returnSignedAt ? (
                           <span style={{ fontSize: '12px', color: '#16a34a' }}>Firmada</span>
                         ) : (
                           <span style={{ fontSize: '12px', color: '#ef4444' }}>Sin firma</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                        {a.returnedAt === null ? (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>—</span>
+                        ) : a.returnUserSignedAt ? (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>Firmada</span>
+                        ) : a.returnRequiresUserSignature ? (
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#dc2626' }}>
+                            Pendiente
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>No aplica</span>
                         )}
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
