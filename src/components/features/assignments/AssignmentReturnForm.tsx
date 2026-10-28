@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import type { AssignmentDetail } from '@/server/queries/assignments.queries'
-import { formatDate } from '@/lib/dates'
+import { formatDate, getTodayMexico } from '@/lib/dates'
 
 const textareaClass =
   'border-input bg-transparent text-foreground w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 resize-y min-h-[72px]'
@@ -19,7 +19,7 @@ type Props = { assignment: AssignmentDetail; adminName: string }
 export function AssignmentReturnForm({ assignment, adminName }: Props) {
   const [state, action, pending] = useActionState(returnAssignmentAction, null)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayMexico()
   const existingNotes = typeof assignment.notes === 'string' ? assignment.notes : ''
 
   return (
@@ -53,7 +53,16 @@ export function AssignmentReturnForm({ assignment, adminName }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="returnedAt">Fecha de devolución *</Label>
-        <Input id="returnedAt" name="returnedAt" type="date" required defaultValue={today} />
+        <Input
+          key={today}
+          id="returnedAt"
+          name="returnedAt"
+          type="date"
+          required
+          defaultValue={today}
+          min={today}
+          max={today}
+        />
       </div>
 
       <div className="space-y-1.5">

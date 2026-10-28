@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
+import { getTodayMexico } from '@/lib/dates'
 
 const selectClass =
   'border-input bg-background text-foreground w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50'
@@ -52,7 +53,7 @@ type Props = {
 export function AssignmentCreateForm({ assets, users, locations }: Props) {
   const [state, action, pending] = useActionState(createAssignmentAction, null)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayMexico()
 
   return (
     <form action={action} className="space-y-5">
@@ -89,7 +90,16 @@ export function AssignmentCreateForm({ assets, users, locations }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="assignedAt">Fecha de asignación *</Label>
-        <Input id="assignedAt" name="assignedAt" type="date" required defaultValue={today} />
+        <Input
+          key={today}
+          id="assignedAt"
+          name="assignedAt"
+          type="date"
+          required
+          defaultValue={today}
+          min={today}
+          max={today}
+        />
       </div>
 
       <div className="space-y-1.5">

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { requireAdminTI, requireAuthenticatedUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getTodayMexico } from '@/lib/dates'
 import type { ActionResult } from '@/types'
 
 const createSchema = z.object({
@@ -99,6 +100,9 @@ export async function createAssignmentAction(
   const assignedAt = new Date(data.assignedAt)
   if (isNaN(assignedAt.getTime())) {
     return { success: false, error: 'La fecha de asignación no es válida.' }
+  }
+  if (data.assignedAt !== getTodayMexico()) {
+    return { success: false, error: 'La fecha debe ser la del día de hoy' }
   }
   const accessories = data.accessories ? { text: data.accessories } : Prisma.JsonNull
 
@@ -196,6 +200,9 @@ export async function returnAssignmentAction(
   const returnedAt = new Date(data.returnedAt)
   if (isNaN(returnedAt.getTime())) {
     return { success: false, error: 'La fecha de devolución no es válida.' }
+  }
+  if (data.returnedAt !== getTodayMexico()) {
+    return { success: false, error: 'La fecha debe ser la del día de hoy' }
   }
   if (returnedAt < assignment.assignedAt) {
     return {
