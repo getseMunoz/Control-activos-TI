@@ -337,7 +337,14 @@ export default async function MyAssetsPage() {
                       )}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: '10px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '10px',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                        }}
+                      >
                         <Link
                           href={`/assignments/${a.id}/receipt`}
                           style={{ fontSize: '12px', color: '#3b82f6', textDecoration: 'none' }}
@@ -350,6 +357,24 @@ export default async function MyAssetsPage() {
                         >
                           Resp. devolución
                         </Link>
+                        {a.returnRequiresUserSignature && !a.returnUserSignedAt && (
+                          <>
+                            <span style={{ fontSize: '12px', color: '#dc2626' }}>
+                              Pendiente de firma de devolución
+                            </span>
+                            <Link
+                              href={`/my-assets/assignments/${a.id}/sign-return`}
+                              style={{
+                                fontSize: '12px',
+                                color: '#0f172a',
+                                fontWeight: 500,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              Firmar devolución
+                            </Link>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -361,6 +361,7 @@ const assignmentReturnSignSelect = {
   assignedAt: true,
   returnedAt: true,
   returnUserSignedAt: true,
+  returnRequiresUserSignature: true,
   asset: {
     select: {
       internalCode: true,
