@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: 'Iniciar sesión',
 }
 
-export default function LoginPage() {
+type Props = { searchParams: Promise<{ sessionInvalid?: string }> }
+
+export default async function LoginPage({ searchParams }: Props) {
+  const { sessionInvalid } = await searchParams
+
   return (
     <div
       style={{
@@ -46,6 +50,23 @@ export default function LoginPage() {
             Acceso interno para administración y consulta de equipos.
           </p>
         </div>
+
+        {sessionInvalid && (
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#b91c1c',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '6px',
+              padding: '10px 12px',
+              margin: '0 0 16px 0',
+              textAlign: 'center',
+            }}
+          >
+            Tu sesión ya no es válida. Por favor, inicia sesión de nuevo.
+          </p>
+        )}
 
         <LoginForm />
       </div>
