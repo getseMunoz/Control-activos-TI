@@ -28,6 +28,10 @@ const signDeliverySchema = z.object({
   assignmentId: z.string().uuid('ID de asignación inválido'),
 })
 
+const signReturnSchema = z.object({
+  assignmentId: z.string().uuid('ID de asignación inválido'),
+})
+
 function parseOptionalString(formData: FormData, key: string): string | undefined {
   const val = formData.get(key)?.toString().trim()
   return val || undefined
@@ -223,6 +227,7 @@ export async function returnAssignmentAction(
           returnSignatureData,
           returnSignedByName,
           returnSignedAt: new Date(),
+          returnRequiresUserSignature: true,
         },
       }),
       prisma.asset.update({
@@ -304,5 +309,82 @@ export async function signDeliveryAction(
 
   revalidatePath('/my-assets')
   revalidatePath(`/assignments/${assignment.id}/receipt`)
+  redirect('/my-assets')
+}
+
+export async function signReturnAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const sessionUser = await requireAuthenticatedUser()
+
+  const returnUserSignatureData = formData.get('returnUserSignatureData')?.toString() ?? ''
+
+  if (!returnUserSignatureData) {
+    return { success: false, error: 'La firma de devolución es obligatoria.' }
+  }
+  if (!returnUserSignatureData.startsWith('data:image/png;base64,')) {
+    return { success: false, error: 'La firma de devolución no es válida.' }
+  }
+  if (returnUserSignatureData.length > 500_000) {
+    return { success: false, error: 'La firma es demasiado grande. Intenta de nuevo.' }
+  }
+
+  const raw = {
+    assignmentId: formData.get('assignmentId')?.toString() ?? '',
+  }
+
+  const result = signReturnSchema.safeParse(raw)
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message }
+  }
+
+  const data = result.data
+
+  // La asignación debe existir, pertenecer al usuario autenticado, ya estar devuelta,
+  // requerir firma del usuario y no tener firma de devolución previa del usuario.
+  const assignment = await prisma.assetAssignment.findUnique({
+    where: { id: data.assignmentId },
+    select: {
+      id: true,
+      userId: true,
+      returnedAt: true,
+      returnRequiresUserSignature: true,
+      returnUserSignedAt: true,
+    },
+  })
+  if (!assignment || assignment.userId !== sessionUser.id) {
+    return { success: false, error: 'Asignación no encontrada.' }
+  }
+  if (assignment.returnedAt === null) {
+    return { success: false, error: 'Esta asignación aún no ha sido devuelta.' }
+  }
+  if (!assignment.returnRequiresUserSignature) {
+    return { success: false, error: 'Esta devolución no requiere firma del usuario.' }
+  }
+  if (assignment.returnUserSignedAt !== null) {
+    return { success: false, error: 'Esta devolución ya cuenta con firma de entrega del usuario.' }
+  }
+
+  // El nombre del firmante se obtiene de la base de datos, nunca del cliente.
+  const signer = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { id: true, firstName: true, lastName: true, isActive: true, deletedAt: true },
+  })
+  if (!signer || !signer.isActive || signer.deletedAt !== null) {
+    return { success: false, error: 'El usuario no existe o no está activo.' }
+  }
+
+  await prisma.assetAssignment.update({
+    where: { id: assignment.id },
+    data: {
+      returnUserSignatureData,
+      returnUserSignedByName: `${signer.firstName} ${signer.lastName}`,
+      returnUserSignedAt: new Date(),
+    },
+  })
+
+  revalidatePath('/my-assets')
+  revalidatePath(`/assignments/${assignment.id}/return-receipt`)
   redirect('/my-assets')
 }
