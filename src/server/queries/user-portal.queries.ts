@@ -40,6 +40,10 @@ export async function getUserPortalSummary(userId: string) {
         assignedAt: true,
         returnedAt: true,
         returnSignedAt: true,
+        returnUserSignatureData: true,
+        returnUserSignedAt: true,
+        returnUserSignedByName: true,
+        returnRequiresUserSignature: true,
         asset: {
           select: {
             internalCode: true,

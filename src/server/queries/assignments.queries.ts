@@ -35,6 +35,8 @@ const assignmentListSelect = {
   deliverySignedByName: true,
   returnSignedAt: true,
   returnSignedByName: true,
+  returnRequiresUserSignature: true,
+  returnUserSignedAt: true,
   notes: true,
   accessories: true,
   asset: { select: { id: true, internalCode: true, name: true, serialNumber: true } },
@@ -258,6 +260,10 @@ const assignmentReturnReceiptSelect = {
   returnSignedAt: true,
   returnSignedByName: true,
   returnSignatureData: true,
+  returnUserSignatureData: true,
+  returnUserSignedAt: true,
+  returnUserSignedByName: true,
+  returnRequiresUserSignature: true,
   notes: true,
   accessories: true,
   asset: {
@@ -347,5 +353,43 @@ export async function getAssignmentForSigning(
       asset: { deletedAt: null },
     },
     select: assignmentSignSelect,
+  })
+}
+
+const assignmentReturnSignSelect = {
+  id: true,
+  assignedAt: true,
+  returnedAt: true,
+  returnUserSignedAt: true,
+  asset: {
+    select: {
+      internalCode: true,
+      name: true,
+      serialNumber: true,
+      brand: true,
+      model: true,
+      assetType: { select: { name: true } },
+      location: { select: { name: true } },
+    },
+  },
+} satisfies Prisma.AssetAssignmentSelect
+
+export type AssignmentReturnSignData = Prisma.AssetAssignmentGetPayload<{
+  select: typeof assignmentReturnSignSelect
+}>
+
+// Solo devuelve la asignación si pertenece al usuario, ya fue devuelta y el activo no está archivado.
+export async function getAssignmentForReturnSigning(
+  assignmentId: string,
+  userId: string,
+): Promise<AssignmentReturnSignData | null> {
+  return prisma.assetAssignment.findFirst({
+    where: {
+      id: assignmentId,
+      userId,
+      returnedAt: { not: null },
+      asset: { deletedAt: null },
+    },
+    select: assignmentReturnSignSelect,
   })
 }
