@@ -1,7 +1,7 @@
 # DECISIONES TÉCNICAS
 ## Sistema de Gestión de Activos TI — CIPRIJAL
-**Versión:** 1.0
-**Fecha:** 2026-06-27
+**Versión:** 1.1
+**Fecha:** 2026-10-28
 **Estado:** Vigente
 
 Este documento registra cada decisión técnica significativa tomada en el proyecto: qué se eligió, por qué, y qué alternativas fueron descartadas. Debe actualizarse cada vez que una decisión cambie.
@@ -121,7 +121,7 @@ El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proy
 - Las cookies `httpOnly` no son accesibles desde JavaScript del navegador, eliminando el riesgo de robo de sesión por XSS.
 - No requiere Redis ni ninguna base de datos de sesiones. La cookie firmada con `NEXTAUTH_SECRET` es autosuficiente.
 - El logout es inmediato: NextAuth elimina la cookie. Sin tokens residuales.
-- `@auth/prisma-adapter` conecta NextAuth directamente con los modelos de Prisma para persistir sesiones si se necesita en el futuro.
+- `@auth/prisma-adapter` está instalado en el proyecto, pero no está conectado a la configuración de NextAuth: la autenticación actual usa únicamente el proveedor `Credentials` con sesiones JWT, sin ningún adapter de base de datos. Se mantiene instalado por si en el futuro se decide usar sesiones persistidas (ver AUD-02 en `PRODUCT_BACKLOG.md`).
 
 **Por qué v5 (beta) en lugar de v4:**
 NextAuth v4 no tiene soporte completo para Next.js App Router y Server Components. v5 fue reescrita específicamente para este modelo de renderizado. El proyecto arranca con v5 para evitar una migración futura.
@@ -259,6 +259,8 @@ npx lint-staged
 - Variable `DATABASE_URL` inyectada automáticamente desde el servicio PostgreSQL de Railway.
 - Para un equipo pequeño, el tiempo ahorrado en operaciones justifica el costo.
 
+**Estado actual:** esta decisión describe el plan de despliegue, no un hecho consumado — el despliegue en Railway está previsto pero aún no se ha realizado (ver `ARQUITECTURA.md` §8.2 y el estado del proyecto en `README.md`).
+
 **Alternativas descartadas:**
 
 | Alternativa | Razón del descarte |
@@ -309,7 +311,7 @@ npx lint-staged
 **Mecanismo real por tipo de entidad:**
 - **Con `deletedAt` + `deletedBy`:** `Asset`, `AssetCredential`.
 - **Solo con `deletedAt`:** `User`, `Location`.
-- **Con bandera `isActive` (sin `deletedAt`):** `AssetType`.
+- **Con bandera `isActive` (sin `deletedAt`):** `AssetType`, `Document`.
 - **Sin ningún mecanismo de borrado lógico — son registros históricos inmutables:** `AssetAssignment`, `AssetExpense`, `Incident`, `MaintenanceOrder`, `MaintenanceSchedule`, `AuditLog`, `AssetTechnicalInfo`.
 
 **Por qué:**
@@ -341,8 +343,31 @@ npx lint-staged
 
 ---
 
+## DT-017 — Doble firma en la devolución de equipos
+
+**Decisión:** Además de la firma del Administrador TI que recibe el equipo, se agregó una segunda firma del propio Usuario Final que lo entrega, capturada desde su portal después de que la devolución ya fue registrada.
+
+**Por qué:**
+- El Administrador TI y el Usuario Final suelen estar en ubicaciones distintas y no siempre coinciden físicamente en el momento de la devolución.
+- El campo `returnRequiresUserSignature` distingue las devoluciones que requieren esta segunda firma de las registradas antes de que existiera, sin necesidad de migrar datos existentes.
+- Se reutilizó el mismo mecanismo de captura ya usado para la firma de recepción (dibujo en canvas, guardado como PNG en Base64), sin introducir una librería nueva.
+
+---
+
+## DT-018 — Revalidación de sesión contra la base de datos
+
+**Decisión:** Las verificaciones de sesión del lado del servidor vuelven a consultar la base de datos en cada solicitud, para confirmar que el usuario sigue activo y conserva el mismo rol que tiene en el token JWT.
+
+**Por qué:**
+- Las sesiones JWT, por diseño, no se revalidan automáticamente contra la base de datos — un usuario desactivado o con el rol cambiado podía conservar acceso mientras su sesión siguiera vigente.
+- Se agregó una ruta dedicada (`/api/auth/force-logout`) que cierra la sesión realmente cuando la verificación falla, en lugar de dejar que el usuario quede en un estado inconsistente.
+- Esta verificación corre en el servidor (no en el proxy de rutas), porque necesita acceso directo a Prisma.
+
+---
+
 ## Historial de cambios
 
 | Versión | Fecha | Cambio |
 |---|---|---|
 | 1.0 | 2026-06-27 | Documento inicial — todas las decisiones de la Fase 1 |
+| 1.1 | 2026-10-28 | DT-006: aclarado que `@auth/prisma-adapter` está instalado pero no conectado. DT-012: agregada advertencia de que el despliegue en Railway está previsto, no realizado. DT-015: agregado `Document` a la categoría `isActive`. Se agregan DT-017 (doble firma en devolución) y DT-018 (revalidación de sesión) |

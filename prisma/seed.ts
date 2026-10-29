@@ -23,7 +23,7 @@ async function main() {
   console.log(`✓ Ubicación: ${location.name}`)
 
   // Usuario administrador (upsert por email único)
-  const passwordHash = await hash(password, 10)
+  const passwordHash = await hash(password, 12)
   const admin = await prisma.user.upsert({
     where: { email },
     update: {},

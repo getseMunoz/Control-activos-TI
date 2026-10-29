@@ -1,6 +1,8 @@
 # Manual de usuario
 
 ## Sistema de Gestión de Activos TI — CIPRIJAL
+**Versión:** 1.0
+**Fecha:** 2026-10-28
 
 Este manual describe el uso general del sistema de gestión de activos TI. El sistema cuenta con dos perfiles de acceso: **Administrador TI** y **Usuario Final**.
 

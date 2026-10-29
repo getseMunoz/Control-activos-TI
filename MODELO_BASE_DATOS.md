@@ -1,5 +1,7 @@
 # MODELO DE BASE DE DATOS
 ## Sistema de Gestión de Activos TI — CIPRIJAL
+**Versión:** 1.1
+**Fecha:** 2026-10-28
 
 **Fuente de verdad:** `prisma/schema.prisma`. Este documento describe el schema real tal como existe hoy en el código — no un diseño propuesto ni una versión anterior. Si algo aquí no coincide con `prisma/schema.prisma`, el schema tiene razón y este documento está desactualizado.
 
@@ -226,6 +228,8 @@ Relación 1-a-1 con `Asset` (`assetId @unique`).
 |---|---|---|
 | id, type, name, filePath, fileName, fileSize, mimeType, entityType, entityId, description, documentDate, uploadedBy, isActive, createdAt | — | Patrón polimórfico: `entityType` + `entityId` apuntan a cualquier entidad |
 
+**Soft delete:** sí, solo `isActive` (sin `deletedAt`).
+
 **Existe en BD, sin funcionalidad implementada.** `grep -rln "prisma.document" src/` no devuelve resultados. No hay forma de subir, ver o eliminar un documento en el sistema actual — ni para activos, ni para las responsivas (que son páginas HTML, no archivos `Document`).
 
 ---
@@ -246,8 +250,8 @@ Relación 1-a-1 con `Asset` (`assetId @unique`).
 |---|---|
 | `deletedAt` + `deletedBy` | `Asset`, `AssetCredential` |
 | Solo `deletedAt` | `User`, `Location` |
-| `isActive` (sin `deletedAt`) | `AssetType` |
-| Ninguno — inmutable | `AssetAssignment`, `AssetExpense`, `Incident`, `MaintenanceOrder`, `MaintenanceSchedule`, `AuditLog`, `AssetTechnicalInfo`, `Document` |
+| `isActive` (sin `deletedAt`) | `AssetType`, `Document` |
+| Ninguno — inmutable | `AssetAssignment`, `AssetExpense`, `Incident`, `MaintenanceOrder`, `MaintenanceSchedule`, `AuditLog`, `AssetTechnicalInfo` |
 
 No existe un helper compartido (`withSoftDelete()` o similar) — cada query que necesita excluir registros borrados incluye `where: { deletedAt: null }` explícitamente.
 
