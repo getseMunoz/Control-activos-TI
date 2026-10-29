@@ -123,11 +123,11 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Fuente del sistema — Inter o system-ui para máxima legibilidad */
+/* Fuente del sistema — Geist (cargada en src/app/layout.tsx vía var(--font-sans)), con system-ui como respaldo */
 body {
   background-color: var(--background);
   font-family:
-    'Inter',
+    var(--font-sans),
     ui-sans-serif,
     system-ui,
     -apple-system,
