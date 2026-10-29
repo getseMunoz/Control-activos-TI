@@ -61,3 +61,6 @@ next-env.d.ts
 .idea/
 *.swp
 *.swo
+
+# Configuración auxiliar local de asistentes de desarrollo
+/.claude/
