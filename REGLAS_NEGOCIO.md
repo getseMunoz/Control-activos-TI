@@ -1,7 +1,7 @@
 # REGLAS DE NEGOCIO
 ## Sistema de Gestión de Activos TI — CIPRIJAL
-**Versión:** 1.1
-**Fecha:** 2026-06-26
+**Versión:** 1.2
+**Fecha:** 2026-10-29
 
 Este documento centraliza todas las reglas de negocio del sistema. Cada regla tiene un identificador único. Las marcadas como **(innegociable)** no pueden cambiarse sin aprobación formal del responsable de TI de CIPRIJAL.
 
@@ -30,6 +30,8 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 **RN-ACT-10 (implementada):** Un activo con una orden de mantenimiento abierta (`pending`, `in_progress`, `waiting_parts` o `waiting_supplier` — los mismos estados que cuenta la tarjeta "Mantenimientos activos" del dashboard) no puede asignarse ni darse de baja hasta que la orden se cierre o cancele. Se valida con una consulta directa a `maintenance_orders` en el momento de asignar (`createAssignmentAction`) y de dar de baja (`updateAssetAction`), **no** a través del campo `status` del activo — un activo puede seguir mostrando `in_storage` aunque tenga una orden abierta, ya que abrir o cerrar una orden de mantenimiento no cambia automáticamente el estado del activo (ver RN-MNT-02 y RN-MNT-03). Además, el formulario de nueva asignación (`getAssignableAssets`) excluye directamente de la lista los activos con mantenimiento abierto, para que ni siquiera aparezcan como opción.
 
 **RN-ACT-11:** La fecha de compra de un activo no tiene restricción de "fecha de hoy": se permite registrar cualquier fecha pasada. A diferencia de la fecha de asignación y de devolución (ver RN-ASGN-11), este campo no está sujeto a la validación de día actual.
+
+**RN-ACT-12 (implementada):** La unicidad del número de serie se verifica dos veces: una comprobación previa dentro del Server Action, y una segunda captura del error de restricción única de la base de datos (código `P2002`) como salvaguarda adicional ante condiciones de carrera.
 
 ---
 
@@ -61,6 +63,10 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ASGN-11:** La fecha de asignación y la fecha de devolución deben ser exactamente la fecha del día en que se realiza el registro, en zona horaria de México (`America/Mexico_City`). No se permite seleccionar una fecha anterior ni posterior; la validación se aplica tanto en el formulario (atributos `min`/`max` del campo de fecha) como en el Server Action correspondiente, comparando contra el valor calculado en servidor.
 
+**RN-ASGN-12 (implementada):** Las imágenes de firma digital tienen un límite máximo de tamaño (500 000 caracteres en formato Base64) y deben comenzar exactamente con el prefijo `data:image/png;base64,`; cualquier otro formato o un archivo más pesado se rechaza.
+
+**RN-ASGN-13 (implementada):** Un Administrador TI puede recibir la asignación de un equipo igual que un Usuario Final — el sistema no distingue por rol al seleccionar al receptor de una asignación. En ese caso, el Administrador TI debe firmar su propia recepción y, si aplica, su propia devolución desde el portal `/my-assets`, igual que cualquier otro usuario; esa ruta no está restringida por rol y no expone datos de otros usuarios.
+
 ---
 
 ## RN-USR — Usuarios
@@ -69,21 +75,31 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-USR-02:** Solo el Administrador TI puede crear, editar y desactivar otros usuarios.
 
-**RN-USR-03:** No se puede eliminar físicamente un usuario del sistema. Solo se puede desactivar (`is_active = false`). El historial de acciones del usuario se conserva en `audit_logs`.
+**RN-USR-03:** No se puede eliminar físicamente un usuario del sistema. Solo se puede desactivar (`is_active = false`). La tabla `audit_logs` existe en el schema, pero ningún Server Action escribe en ella actualmente — no hay un historial de acciones del usuario realmente registrado hoy (ver RN-AUD-01 a 04).
 
 **RN-USR-04 (innegociable):** No se puede desactivar un usuario que tiene asignaciones activas sin antes reasignar o devolver todos sus equipos. El sistema bloquea la desactivación si existen asignaciones pendientes. Esta misma regla también bloquea la desactivación si el usuario tiene una devolución ya registrada por el Administrador TI pero con su propia firma de entrega (`returnUserSignatureData`, ver RN-ASGN-07-C) todavía pendiente — debe firmarla antes de poder ser desactivado.
 
 **RN-USR-05:** El email de cada usuario debe ser único en el sistema. No puede haber dos cuentas con el mismo correo electrónico, ni siquiera si una está desactivada.
 
-**RN-USR-06:** Un Usuario Final solo puede editar su propio perfil (nombre, teléfono, contraseña). No puede modificar su rol, localidad ni estado de activación.
+**RN-USR-06 (futura):** se contempla que un Usuario Final pueda editar su propio perfil (nombre, teléfono, contraseña), sin poder modificar su rol, localidad ni estado de activación. No existe ninguna pantalla ni Server Action de autoedición de perfil en el código actual — la única función que edita usuarios exige rol Administrador TI.
 
-**RN-USR-07:** Máximo 5 intentos de login fallidos consecutivos antes de bloqueo temporal de 15 minutos. El contador se reinicia con un login exitoso.
+**RN-USR-07:** Máximo 5 intentos de login fallidos consecutivos antes de bloqueo temporal de 15 minutos. El contador se reinicia con un login exitoso. No existe un mecanismo para que un Administrador TI desbloquee una cuenta manualmente antes de que termine el periodo de 15 minutos — el desbloqueo ocurre únicamente por el paso del tiempo o por un login exitoso posterior.
 
 **RN-USR-08:** Las contraseñas se almacenan como hash bcrypt (cost factor mínimo 12). Nunca se almacena la contraseña en texto claro.
 
 **RN-USR-09:** Las contraseñas deben cumplir: mínimo 8 caracteres, al menos 1 letra mayúscula, 1 número y 1 carácter especial.
 
 **RN-USR-10:** El teléfono es un campo opcional; puede quedar vacío. Si se captura, debe tener exactamente 10 dígitos numéricos, sin letras, espacios ni símbolos. La validación se aplica tanto en el formulario como en el servidor.
+
+**RN-USR-11 (implementada):** Un Administrador TI no puede modificar su propio rol a `usuario_final` ni desactivar su propia cuenta desde el panel de administración de usuarios. El sistema rechaza la operación con los mensajes "No puedes cambiar tu propio rol de Administrador TI." y "No puedes desactivarte a ti mismo." respectivamente.
+
+**RN-USR-12 (implementada):** No se puede quitar el rol `admin_ti` ni desactivar al último Administrador TI activo del sistema — siempre debe quedar al menos una cuenta con ese rol activa.
+
+**RN-USR-13 (implementada):** Un Administrador TI no puede restablecer su propia contraseña desde la pantalla de administración de usuarios.
+
+**RN-USR-14 (implementada):** No se puede restablecer la contraseña de un usuario que ya fue eliminado (`deleted_at` distinto de nulo) o desactivado.
+
+**RN-USR-15 (implementada):** Al reactivar un usuario, el sistema limpia tanto `is_active` como `deleted_at` — la reactivación revierte completamente el archivado, no solo la desactivación.
 
 ---
 
@@ -107,7 +123,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-INC-04:** El número de incidencia (formato `INC-AAAA-NNNN`) es generado automáticamente por el sistema. No puede ser editado.
 
-**RN-INC-05:** Una incidencia puede originar una orden de trabajo de mantenimiento correctivo. La relación es `1 incidencia → 0..1 orden de trabajo`.
+**RN-INC-05:** El modelo de datos está preparado para que una incidencia origine una orden de trabajo de mantenimiento correctivo (relación `1 incidencia → 0..1 orden de trabajo`, campo `incidentId` en `MaintenanceOrder`), pero esta relación **no está implementada en la interfaz**: no existe ningún flujo para crear una orden de mantenimiento directamente desde una incidencia, por lo que el campo permanece siempre vacío en el sistema actual.
 
 **RN-INC-06:** Las incidencias no se eliminan físicamente. Son registros históricos permanentes.
 
@@ -198,3 +214,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 **RN-SEG-04:** Ningún dato sensible (contraseñas, IPs, credenciales) se incluye en logs del sistema.
 
 **RN-SEG-05:** Las variables de entorno con credenciales nunca se commitean al repositorio. Se gestionan en Railway.
+
+**RN-SEG-06 (implementada):** La sesión del usuario se vuelve a verificar contra la base de datos en cada petición protegida, no solo al iniciar sesión: se confirma que la cuenta siga activa, no eliminada, y con el mismo rol que tiene en el token de sesión. Si la verificación falla, la sesión se cierra automáticamente.
+
+**RN-SEG-07 (implementada):** La sesión del usuario tiene una duración máxima de 30 minutos.
