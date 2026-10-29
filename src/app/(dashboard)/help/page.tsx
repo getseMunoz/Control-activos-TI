@@ -71,33 +71,33 @@ const FLOW_STEPS = [
   },
   {
     title: 'Capturar firma de entrega',
-    route: 'Asignaciones → [Asignación] → Responsiva',
+    route: 'Mis activos → Firmar recepción',
     description:
-      'El usuario firma digitalmente la recepción del equipo desde la responsiva de entrega.',
+      'El usuario firma digitalmente la recepción del equipo desde su portal "Mis activos", cuando el equipo queda pendiente de firma.',
   },
   {
     title: 'Generar responsiva de entrega',
     route: 'Asignaciones → Responsiva → Imprimir',
     description:
-      'Imprime o guarda el PDF de la responsiva de entrega con los datos del activo, usuario y firma.',
+      'Consulta e imprime la responsiva de entrega con los datos del activo, usuario y firma.',
   },
   {
     title: 'Registrar devolución',
     route: 'Asignaciones → [Asignación] → Devolver',
     description:
-      'Registra la fecha y condición de retorno del equipo. El activo vuelve a estado disponible.',
+      'Registra la fecha de devolución y notas del equipo. El activo vuelve a estado disponible.',
   },
   {
-    title: 'Capturar firma de devolución',
+    title: 'Firma de devolución',
     route: 'Asignaciones → [Asignación] → Devolver',
     description:
-      'Durante el registro de devolución, el usuario firma digitalmente la entrega del equipo a TI.',
+      'Durante el registro de devolución, el responsable de Sistemas firma digitalmente la recepción del equipo. Después, el propio usuario debe firmar por separado desde su portal "Mis activos" que entregó el equipo.',
   },
   {
     title: 'Generar responsiva de devolución',
     route: 'Asignaciones → Resp. devolución → Imprimir',
     description:
-      'Imprime o guarda el PDF de la responsiva de devolución con la firma y folio de devolución.',
+      'Consulta e imprime la responsiva de devolución, que muestra por separado la firma de quien entrega el equipo y la firma de quien lo recibe.',
   },
   {
     title: 'Consultar historial del activo',
@@ -112,7 +112,7 @@ const DAILY_OPS = [
     title: 'Dashboard y alertas operativas',
     route: '/dashboard',
     description:
-      'Visualiza contadores generales y alertas: incidencias abiertas, mantenimientos activos, asignaciones sin firma y activos perdidos o robados.',
+      'Visualiza contadores generales y alertas: incidencias abiertas, mantenimientos activos, asignaciones sin firma de entrega y devoluciones sin firma.',
   },
   {
     title: 'Filtros de activos',
@@ -166,7 +166,8 @@ const USER_PORTAL = [
   },
   {
     title: 'Consultar responsivas propias',
-    description: 'Accede a la responsiva de entrega desde la tarjeta de cada equipo asignado.',
+    description:
+      'Accede a la responsiva de entrega y, una vez devuelto el equipo, a la responsiva de devolución, desde la tarjeta de cada equipo.',
   },
   {
     title: 'Reportar fallas',
@@ -176,7 +177,7 @@ const USER_PORTAL = [
   {
     title: 'Consultar devoluciones recientes',
     description:
-      'Revisa el historial de equipos que has devuelto, con fecha, firma y responsiva de devolución.',
+      'Revisa el historial de equipos que has devuelto, incluyendo si tu firma de devolución ya se registró o sigue pendiente.',
   },
 ]
 
@@ -212,7 +213,7 @@ export default async function HelpPage() {
               color: isAdmin ? '#2563eb' : '#16a34a',
             }}
           >
-            {isAdmin ? 'Administrador TI' : 'Usuario final'}
+            {isAdmin ? 'Administrador TI' : 'Usuario Final'}
           </span>
         </div>
         <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
@@ -383,14 +384,14 @@ export default async function HelpPage() {
                 margin: '0 0 12px',
               }}
             >
-              Usuario final
+              Usuario Final
             </p>
             {[
               'Consulta sus activos asignados',
-              'Accede a sus responsivas de entrega',
+              'Accede a sus responsivas de entrega y devolución',
               'Reporta fallas sobre sus equipos',
               'Consulta devoluciones recientes',
-              'Firma digitalmente en responsivas',
+              'Firma digitalmente desde su portal',
             ].map((item) => (
               <div key={item} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                 <div style={tipBullet} />
