@@ -43,7 +43,7 @@
   --ring: oklch(0.566 0.098 152.8);
 
   /* Sidebar */
-  --sidebar-bg: #1a2332;
+  --sidebar-bg: var(--primary);
   --sidebar-fg: #e2e8f0;
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-border: oklch(0.922 0 0);

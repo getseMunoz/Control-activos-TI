@@ -1,15 +1,6 @@
-import Link from 'next/link'
 import { auth, signOut } from '@/lib/auth'
 import { BrandLogo } from '@/components/layout/BrandLogo'
-
-const navLinkStyle = {
-  display: 'block',
-  padding: '6px 8px',
-  borderRadius: '6px',
-  fontSize: '13px',
-  color: '#94a3b8',
-  textDecoration: 'none',
-} as const
+import { NavLink } from './NavLink'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -19,7 +10,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <>
       <style
         dangerouslySetInnerHTML={{
-          __html: `@media print { .dashboard-sidebar { display: none !important; } }`,
+          __html: `@media print { .dashboard-sidebar { display: none !important; } }
+.sidebar-nav-link:hover { background: var(--primary-hover) !important; }`,
         }}
       />
       <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -27,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           className="dashboard-sidebar"
           style={{
             width: '240px',
-            background: '#1a2332',
+            background: 'var(--sidebar-bg)',
             minHeight: '100vh',
             padding: '24px 16px',
             flexShrink: 0,
@@ -44,14 +36,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
             {isAdmin ? (
               <>
-                <Link href="/dashboard" style={navLinkStyle}>
-                  Dashboard
-                </Link>
+                <NavLink href="/dashboard">Dashboard</NavLink>
                 <div
                   style={{
                     fontSize: '11px',
                     fontWeight: '600',
-                    color: '#475569',
+                    color: 'var(--sidebar-fg)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     padding: '12px 8px 4px',
@@ -59,40 +49,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 >
                   Administración
                 </div>
-                <Link href="/admin/users" style={navLinkStyle}>
-                  Usuarios
-                </Link>
-                <Link href="/admin/locations" style={navLinkStyle}>
-                  Ubicaciones
-                </Link>
-                <Link href="/admin/asset-types" style={navLinkStyle}>
-                  Tipos de activo
-                </Link>
-                <Link href="/assets" style={navLinkStyle}>
-                  Activos
-                </Link>
-                <Link href="/assignments" style={navLinkStyle}>
-                  Asignaciones
-                </Link>
-                <Link href="/reports" style={navLinkStyle}>
-                  Reportes
-                </Link>
+                <NavLink href="/admin/users">Usuarios</NavLink>
+                <NavLink href="/admin/locations">Ubicaciones</NavLink>
+                <NavLink href="/admin/asset-types">Tipos de activo</NavLink>
+                <NavLink href="/assets">Activos</NavLink>
+                <NavLink href="/assignments">Asignaciones</NavLink>
+                <NavLink href="/reports">Reportes</NavLink>
               </>
             ) : (
-              <Link href="/my-assets" style={navLinkStyle}>
-                Mis activos
-              </Link>
+              <NavLink href="/my-assets">Mis activos</NavLink>
             )}
             <div
               style={{
-                borderTop: '1px solid #2d3f55',
+                borderTop: '1px solid rgba(255, 255, 255, 0.18)',
                 marginTop: '8px',
                 paddingTop: '8px',
               }}
             >
-              <Link href="/help" style={navLinkStyle}>
-                Ayuda
-              </Link>
+              <NavLink href="/help">Ayuda</NavLink>
             </div>
           </nav>
 
@@ -100,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {session?.user && (
             <div
               style={{
-                borderTop: '1px solid #2d3f55',
+                borderTop: '1px solid rgba(255, 255, 255, 0.18)',
                 paddingTop: '16px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -108,10 +82,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               }}
             >
               <div>
-                <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: '500', margin: 0 }}>
+                <p style={{ color: '#ffffff', fontSize: '13px', fontWeight: '500', margin: 0 }}>
                   {session.user.name}
                 </p>
-                <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0' }}>
+                <p style={{ color: 'var(--sidebar-fg)', fontSize: '12px', margin: '2px 0 0' }}>
                   {session.user.email}
                 </p>
               </div>
@@ -128,9 +102,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     width: '100%',
                     padding: '6px 12px',
                     background: 'transparent',
-                    border: '1px solid #2d3f55',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
                     borderRadius: '6px',
-                    color: '#94a3b8',
+                    color: '#ffffff',
                     fontSize: '13px',
                     cursor: 'pointer',
                     textAlign: 'left',

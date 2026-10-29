@@ -59,6 +59,6 @@ export default auth((req) => {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto assets estáticos y API de auth
-    '/((?!_next/static|_next/image|favicon.ico|public|api/auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images/|api/auth).*)',
   ],
 }
