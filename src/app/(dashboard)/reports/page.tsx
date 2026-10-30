@@ -176,7 +176,6 @@ export default async function ReportsPage() {
         <StatCard label="Total activos" value={data.totalAssets} />
         <StatCard label="Asignados" value={data.assignedAssets} />
         <StatCard label="En almacén" value={data.inStorageAssets} />
-        <StatCard label="En mantenimiento" value={data.inMaintenanceAssets} />
         <StatCard label="Incidencias activas" value={data.activeIncidents} />
         <StatCard
           label="OT activas"
