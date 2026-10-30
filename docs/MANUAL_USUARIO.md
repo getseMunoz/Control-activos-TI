@@ -93,6 +93,8 @@ Para asignar un activo a un usuario:
 
 Al finalizar, el sistema actualiza el estado del activo y conserva el registro histórico de la asignación. La asignación queda pendiente de firma de recepción hasta que el propio Usuario Final la firme desde su portal (ver sección 3).
 
+Un equipo también puede asignarse a un Administrador TI. En ese caso, mientras tenga una asignación propia pendiente de firma de recepción o de devolución, el Administrador TI verá aparecer **Mis activos** en su propio menú, además de sus opciones habituales, para poder firmar igual que lo haría un Usuario Final (ver sección 3).
+
 ### 2.8 Responsiva de entrega
 
 Después de una asignación se puede consultar la responsiva correspondiente. Esta contiene los datos principales del activo, usuario, responsable de TI, fecha, accesorios, notas y firma registrada.

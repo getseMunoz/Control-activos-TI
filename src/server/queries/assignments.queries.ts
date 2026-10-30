@@ -398,3 +398,16 @@ export async function getAssignmentForReturnSigning(
     select: assignmentReturnSignSelect,
   })
 }
+
+// true si el usuario tiene una asignación activa o una devolución con su propia
+// firma pendiente — usado para decidir si mostrarle el enlace "Mis activos"
+// a un admin_ti que también tenga equipos asignados a su nombre.
+export async function userHasAssignmentActivity(userId: string): Promise<boolean> {
+  const count = await prisma.assetAssignment.count({
+    where: {
+      userId,
+      OR: [{ returnedAt: null }, { returnRequiresUserSignature: true, returnUserSignedAt: null }],
+    },
+  })
+  return count > 0
+}

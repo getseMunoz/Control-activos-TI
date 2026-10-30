@@ -65,7 +65,7 @@ Este documento centraliza todas las reglas de negocio del sistema. Cada regla ti
 
 **RN-ASGN-12 (implementada):** Las imágenes de firma digital tienen un límite máximo de tamaño (500 000 caracteres en formato Base64) y deben comenzar exactamente con el prefijo `data:image/png;base64,`; cualquier otro formato o un archivo más pesado se rechaza.
 
-**RN-ASGN-13 (implementada):** Un Administrador TI puede recibir la asignación de un equipo igual que un Usuario Final — el sistema no distingue por rol al seleccionar al receptor de una asignación. En ese caso, el Administrador TI debe firmar su propia recepción y, si aplica, su propia devolución desde el portal `/my-assets`, igual que cualquier otro usuario; esa ruta no está restringida por rol y no expone datos de otros usuarios.
+**RN-ASGN-13 (implementada):** Un Administrador TI puede recibir la asignación de un equipo igual que un Usuario Final — el sistema no distingue por rol al seleccionar al receptor de una asignación. En ese caso, el Administrador TI debe firmar su propia recepción y, si aplica, su propia devolución desde el portal `/my-assets`, igual que cualquier otro usuario; esa ruta no está restringida por rol y no expone datos de otros usuarios. Cuando un Administrador TI tiene una asignación activa propia o una devolución con su firma pendiente, el enlace **Mis activos** aparece también en su menú (además de sus opciones habituales de administración) para que pueda llegar a firmar; si no tiene nada pendiente, el enlace no se muestra.
 
 ---
 

@@ -1,10 +1,19 @@
-import { auth, signOut } from '@/lib/auth'
+import { auth, signOut, requireAuthenticatedUser } from '@/lib/auth'
 import { BrandLogo } from '@/components/layout/BrandLogo'
 import { NavLink } from './NavLink'
+import { userHasAssignmentActivity } from '@/server/queries/assignments.queries'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   const isAdmin = session?.user?.role === 'admin_ti'
+
+  // Un admin_ti también puede recibir equipos asignados (ver RN-ASGN-13): si tiene
+  // algo pendiente de firmar, se le muestra "Mis activos" además de su menú habitual.
+  let adminHasOwnAssignments = false
+  if (isAdmin) {
+    const { id } = await requireAuthenticatedUser()
+    adminHasOwnAssignments = await userHasAssignmentActivity(id)
+  }
 
   return (
     <>
@@ -55,6 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <NavLink href="/assets">Activos</NavLink>
                 <NavLink href="/assignments">Asignaciones</NavLink>
                 <NavLink href="/reports">Reportes</NavLink>
+                {adminHasOwnAssignments && <NavLink href="/my-assets">Mis activos</NavLink>}
               </>
             ) : (
               <NavLink href="/my-assets">Mis activos</NavLink>
