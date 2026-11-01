@@ -265,12 +265,12 @@ export default async function AssetsPage({ searchParams }: Props) {
               letterSpacing: '0.04em',
             }}
           >
-            Alertas
+            Incidencias y mantenimiento
           </label>
           <select name="hasAlerts" defaultValue={filters.hasAlerts ?? ''} className={selectClass}>
             <option value="">Todos</option>
-            <option value="yes">Con alertas</option>
-            <option value="no">Sin alertas</option>
+            <option value="yes">Con incidencias o mantenimiento</option>
+            <option value="no">Sin incidencias ni mantenimiento</option>
           </select>
         </div>
 
@@ -359,7 +359,7 @@ export default async function AssetsPage({ searchParams }: Props) {
                     'Ubicación',
                     'Estado',
                     'Asignado a',
-                    'Alertas',
+                    'Incidencias / Mant.',
                     'Gastos',
                     'F. Compra',
                     'Registro',
@@ -449,7 +449,7 @@ export default async function AssetsPage({ searchParams }: Props) {
                       </td>
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                         {openIncidents === 0 && activeMaintenance === 0 ? (
-                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Sin alertas</span>
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Sin pendientes</span>
                         ) : (
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                             {openIncidents > 0 && (
