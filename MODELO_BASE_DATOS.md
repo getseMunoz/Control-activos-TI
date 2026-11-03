@@ -5,7 +5,7 @@
 
 **Fuente de verdad:** `prisma/schema.prisma`. Este documento describe el schema real tal como existe hoy en el código — no un diseño propuesto ni una versión anterior. Si algo aquí no coincide con `prisma/schema.prisma`, el schema tiene razón y este documento está desactualizado.
 
-**Motor:** PostgreSQL 15+. **ORM:** Prisma (`@prisma/client` ^6.3.1).
+**Motor:** PostgreSQL 14+ (desarrollado y probado con PostgreSQL 14.19). **ORM:** Prisma (`@prisma/client` ^6.3.1).
 
 ---
 

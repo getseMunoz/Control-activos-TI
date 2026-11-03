@@ -431,7 +431,7 @@ Client Component actualiza UI según resultado
 ```
 Requisitos:
 ├── Node.js 20 LTS
-├── PostgreSQL 15+ local (o Docker: docker run postgres:15)
+├── PostgreSQL 14+ local (o Docker: docker run postgres:14)
 └── Variables de entorno en .env.local
 
 Comandos:

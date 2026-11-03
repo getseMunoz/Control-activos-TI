@@ -10,7 +10,7 @@ Sistema empresarial para el control completo del hardware tecnológico de CIPRIJ
 |---|---|---|
 | Node.js | 20 LTS | Usa `.nvmrc` si tienes nvm instalado |
 | npm | 10+ | Incluido con Node.js |
-| PostgreSQL | 15+ | Local para desarrollo |
+| PostgreSQL | 14+ | Local para desarrollo. Desarrollado y probado con PostgreSQL 14.19 |
 | Git | 2.x | Para control de versiones y Husky |
 
 ---

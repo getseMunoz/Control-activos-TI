@@ -67,15 +67,16 @@ El archivo de middleware fue renombrado de `middleware.ts` a `proxy.ts`. El proy
 
 ---
 
-## DT-004 — PostgreSQL 15 como base de datos
+## DT-004 — PostgreSQL 14 como base de datos
 
-**Decisión:** PostgreSQL 15 como única base de datos.
+**Decisión:** PostgreSQL 14 como única base de datos. El entorno de desarrollo actual corre PostgreSQL 14.19 (verificado con `SELECT version();`).
 
 **Por qué:**
 - Los datos de activos TI son relacionales: activos → asignaciones → usuarios → localidades. PostgreSQL tiene integridad referencial nativa.
 - Soporte JSONB para el campo `specs` de activos (especificaciones técnicas variables por tipo de hardware) sin necesidad de una base de datos NoSQL separada.
 - Soporte nativo de `TIMESTAMPTZ` para fechas en UTC con zona horaria.
 - Índices parciales (usados para la restricción de asignación única activa: `WHERE returned_at IS NULL`).
+- JSONB, `TIMESTAMPTZ` e índices parciales están disponibles desde PostgreSQL 9.x–11 — no son funciones nuevas de la versión 15; el proyecto no depende de ninguna característica exclusiva de versiones posteriores a la 14.
 - Railway provee PostgreSQL administrado con backups automáticos.
 - El equipo de CIPRIJAL tiene más probabilidad de encontrar soporte y documentación para PostgreSQL que para alternativas.
 
