@@ -1,7 +1,7 @@
 # PRODUCT BACKLOG
 ## Sistema de Gestión de Activos TI — CIPRIJAL
 **Versión:** 1.0
-**Fecha:** 2026-06-26
+**Fecha:** 2026-08-26
 
 ---
 
@@ -143,12 +143,12 @@ Los puntos de historia, prioridades y dependencias originales **no se recalculan
 | HU-47 | Como sistema, quiero cambiar el estado del activo a `in_maintenance` al crear una orden de trabajo. | Crítica | 1 | HU-46 | Futuro / fuera del alcance actual |
 | HU-48 | Como Administrador TI, quiero cerrar una orden de trabajo registrando resultado, descripción y costo. | Crítica | 3 | HU-46 | Implementado |
 | HU-49 | Como sistema, quiero devolver el activo a su estado anterior al cerrar la orden de trabajo. | Crítica | 2 | HU-48 | Futuro / fuera del alcance actual |
-| HU-50 | Como Administrador TI, quiero vincular una incidencia a una orden de trabajo correctivo. | Alta | 2 | HU-46, HU-38 | Implementado |
+| HU-50 | Como Administrador TI, quiero vincular una incidencia a una orden de trabajo correctivo. | Alta | 2 | HU-46, HU-38 | En proceso |
 | HU-51 | Como Administrador TI, quiero programar mantenimientos preventivos periódicos para un activo con frecuencia configurable. | Alta | 3 | HU-17 | Futuro / fuera del alcance actual |
 | HU-52 | Como Administrador TI, quiero ver el historial de mantenimientos de un activo desde su ficha. | Alta | 2 | HU-46 | Implementado |
 | HU-53 | Como Administrador TI, quiero ver el listado de todas las órdenes de trabajo con filtros por estado, tipo y período. | Alta | 3 | HU-46 | En proceso |
 
-**Notas:** HU-47/49, no existe ningún automatismo que cambie el estado del activo al crear o cerrar una OT; el cambio, si se requiere, lo hace manualmente el Administrador TI. HU-48, el resultado es obligatorio; descripción y costo son opcionales. HU-51, el modelo `MaintenanceSchedule` existe en el schema sin ninguna acción, query ni interfaz. HU-53, las órdenes se gestionan por activo, sin vista global con esos filtros.
+**Notas:** HU-47/49, no existe ningún automatismo que cambie el estado del activo al crear o cerrar una OT; el cambio, si se requiere, lo hace manualmente el Administrador TI. HU-48, el resultado es obligatorio; descripción y costo son opcionales. HU-50, el campo `incidentId` existe en el modelo `MaintenanceOrder` del schema, pero no hay ningún flujo en la interfaz para vincular una incidencia a una orden de trabajo (ver RN-INC-05 en `REGLAS_NEGOCIO.md` y MF-15 en el catálogo de mejoras futuras de este mismo documento). HU-51, el modelo `MaintenanceSchedule` existe en el schema sin ninguna acción, query ni interfaz. HU-53, las órdenes se gestionan por activo, sin vista global con esos filtros.
 
 ---
 
