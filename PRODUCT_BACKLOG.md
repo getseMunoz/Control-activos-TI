@@ -85,11 +85,11 @@ Los puntos de historia, prioridades y dependencias originales **no se recalculan
 | HU-22 | Como Administrador TI, quiero editar los datos de un activo existente. | Alta | 2 | HU-17 | Implementado |
 | HU-23 | Como Administrador TI, quiero ver el listado de activos con filtros por tipo, estado, localidad y búsqueda por texto. | Crítica | 5 | HU-17 | Implementado |
 | HU-24 | Como Administrador TI, quiero ver el detalle completo de un activo (información, historial de estados, asignaciones, mantenimientos, incidencias, documentos). | Alta | 5 | HU-17 | En proceso |
-| HU-25 | Como Administrador TI, quiero cambiar el estado de un activo (entre: en almacén, asignado, en mantenimiento, dado de baja, robado, perdido) con confirmación. | Crítica | 3 | HU-17 | Implementado |
+| HU-25 | Como Administrador TI, quiero cambiar el estado de un activo (entre: en almacén, asignado, en mantenimiento, dado de baja, robado, perdido) con confirmación. | Crítica | 3 | HU-17 | En proceso |
 | HU-26 | Como Administrador TI, quiero dar de baja un activo. El activo no debe poder eliminarse si tiene asignación activa. | Crítica | 3 | HU-17, HU-28 | Implementado |
 | HU-27 | Como Administrador TI, quiero adjuntar documentos (facturas, manuales, fotografías) a un activo. | Media | 3 | HU-17 | Futuro / fuera del alcance actual |
 
-**Notas:** HU-17, el tipo es un catálogo administrable (`AssetType`), no un enum fijo; no existe campo de condición. HU-21, está cubierto por `AssetTechnicalInfo`, un módulo dedicado, no un JSON libre. HU-24, el detalle no incluye documentos adjuntos (módulo no implementado) ni un historial de estados dedicado. HU-25, los estados reales son `in_storage, assigned, in_maintenance, decommissioned, stolen, lost`; no existe "registrado"; sin motivo obligatorio. HU-26, no hay campo de motivo de baja dedicado. HU-27, el modelo `Document` existe en el schema sin ninguna acción ni interfaz.
+**Notas:** HU-17, el tipo es un catálogo administrable (`AssetType`), no un enum fijo; no existe campo de condición. HU-21, está cubierto por `AssetTechnicalInfo`, un módulo dedicado, no un JSON libre. HU-24, el detalle no incluye documentos adjuntos (módulo no implementado) ni un historial de estados dedicado. HU-25, los estados reales son `in_storage, assigned, in_maintenance, decommissioned, stolen, lost`; no existe "registrado"; sin motivo obligatorio; además, el cambio de estado no tiene ningún paso de confirmación en la interfaz (es solo un `<select>` y guardar, a diferencia de otras acciones del sistema que sí usan `confirm()`). HU-26, no hay campo de motivo de baja dedicado. HU-27, el modelo `Document` existe en el schema sin ninguna acción ni interfaz.
 
 ---
 
@@ -108,9 +108,9 @@ Los puntos de historia, prioridades y dependencias originales **no se recalculan
 | HU-34 | Como Administrador TI, quiero ver el historial completo de asignaciones de un activo. | Alta | 2 | HU-28 | Implementado |
 | HU-35 | Como Usuario Final, quiero ver la lista de equipos que tengo asignados actualmente. | Crítica | 2 | HU-28 | Implementado |
 | HU-36 | Como cualquier usuario, quiero consultar e imprimir la responsiva de mis propios equipos (entrega y devolución). | Alta | 2 | HU-30 | Implementado |
-| HU-37 | Como Administrador TI, quiero ver el listado de todas las asignaciones activas con filtros por usuario, tipo de equipo y fecha. | Alta | 3 | HU-28 | Implementado |
+| HU-37 | Como Administrador TI, quiero ver el listado de todas las asignaciones activas con filtros por usuario, tipo de equipo y fecha. | Alta | 3 | HU-28 | En proceso |
 
-**Notas:** HU-28, sin firma al crear; sin campo de condición. HU-30/31/32, no hay PDF; la firma es un dibujo en canvas, no checkbox; no se registra IP ni ID de sesión; el nombre viene siempre de la base de datos. HU-33, firma obligatoria del Administrador TI que recibe el equipo, resuelta desde su propia sesión, no desde el usuario asignado; sin campo de condición de retorno. HU-36, son páginas HTML imprimibles, no un archivo PDF descargable.
+**Notas:** HU-28, sin firma al crear; sin campo de condición. HU-30/31/32, no hay PDF; la firma es un dibujo en canvas, no checkbox; no se registra IP ni ID de sesión; el nombre viene siempre de la base de datos. HU-33, firma obligatoria del Administrador TI que recibe el equipo, resuelta desde su propia sesión, no desde el usuario asignado; sin campo de condición de retorno. HU-36, son páginas HTML imprimibles, no un archivo PDF descargable. HU-37, el listado real filtra por estado, usuario, activo (un equipo específico) y rango de fechas — no existe un filtro por tipo de equipo (`assetTypeId`) en esta pantalla.
 
 ---
 
