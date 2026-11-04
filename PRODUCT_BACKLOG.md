@@ -1,7 +1,7 @@
 # PRODUCT BACKLOG
 ## Sistema de Gestión de Activos TI — CIPRIJAL
-**Versión:** 1.0
-**Fecha:** 2026-08-26
+**Versión:** 1.1
+**Fecha:** 2026-11-04
 
 ---
 
