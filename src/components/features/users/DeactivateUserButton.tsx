@@ -34,6 +34,7 @@ export function DeactivateUserButton({ userId, isActive }: Props) {
       setPending(false)
     } else {
       router.refresh()
+      setPending(false)
     }
   }
 
