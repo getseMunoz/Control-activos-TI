@@ -151,6 +151,7 @@ export async function createAssignmentAction(
 
   revalidatePath('/assignments')
   revalidatePath('/assets')
+  revalidatePath('/my-assets')
   redirect('/assignments')
 }
 
@@ -257,6 +258,7 @@ export async function returnAssignmentAction(
 
   revalidatePath('/assignments')
   revalidatePath('/assets')
+  revalidatePath('/my-assets')
   redirect('/assignments')
 }
 

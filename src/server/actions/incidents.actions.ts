@@ -255,5 +255,6 @@ export async function updateIncidentAction(
   })
 
   revalidatePath(`/assets/${data.assetId}`)
+  revalidatePath('/my-assets')
   redirect(`/assets/${data.assetId}`)
 }
