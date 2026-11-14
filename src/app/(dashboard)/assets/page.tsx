@@ -92,21 +92,7 @@ export default async function AssetsPage({ searchParams }: Props) {
       >
         <h1 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Activos TI</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Link
-            href={exportHref}
-            style={{
-              height: '36px',
-              padding: '0 14px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#475569',
-              textDecoration: 'none',
-              background: 'white',
-            }}
-          >
+          <Link href={exportHref} className={buttonVariants({ variant: 'outline' })}>
             Exportar CSV
           </Link>
           <Link href="/assets/new" className={buttonVariants()}>
