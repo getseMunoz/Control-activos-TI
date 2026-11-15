@@ -1,4 +1,4 @@
-# CIPRIJAL — Sistema de Gestión de Activos TI
+# Sistema de Gestión de Activos TI
 
 Sistema empresarial para el control completo del hardware tecnológico de CIPRIJAL. Registra, asigna, mantiene y da de baja equipos con número de serie obligatorio, firma digital de responsivas, gestión de incidencias y trazabilidad total.
 
