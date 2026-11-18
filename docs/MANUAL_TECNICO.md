@@ -118,7 +118,7 @@ desarrollo local, no en un servidor.
 |---|---|
 | Sistema operativo | Ubuntu Server (LTS) |
 | CPU | 2 núcleos |
-| Memoria RAM | 2 GB (4 GB si el build de producción —`npm run build`— se compila en el propio servidor, en vez de generarse en un paso de CI/CD externo) |
+| Memoria RAM | 4 GB (el sistema operativo, la aplicación y PostgreSQL comparten el mismo servidor; este margen permite además compilar el build de producción —`npm run build`— en el propio servidor) |
 | Almacenamiento | 20 GB |
 | Node.js | 20 (LTS) |
 | PostgreSQL | 14 o superior |
@@ -736,7 +736,7 @@ nota de alcance al inicio de este manual). Ninguno de estos puntos se ejecutó c
 manual; se listan para que quien despliegue no parta de cero.
 
 - [ ] **Servidor:** aprovisionar conforme a la estimación de la sección 2.1 (Ubuntu Server LTS, 2
-      núcleos, 2-4 GB RAM, 20 GB de almacenamiento, Node.js 20, PostgreSQL 14+), o la opción de
+      núcleos, 4 GB RAM, 20 GB de almacenamiento, Node.js 20, PostgreSQL 14+), o la opción de
       hospedaje elegida (Railway u otra).
 - [ ] **Dominio y HTTPS:** configurar un dominio propio con certificado TLS antes de exponer el
       sistema — varias protecciones del proyecto dependen de servir por HTTPS (ver el punto de la
