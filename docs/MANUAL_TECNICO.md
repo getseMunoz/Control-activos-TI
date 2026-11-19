@@ -283,9 +283,11 @@ ciprijal-activos-ti/
 │   └── hooks/           → `use-media-query.ts` y su barrel `index.ts`
 │
 ├── public/images/        → Logo y fondo de login (los dos únicos archivos estáticos reales)
-├── docs/                 → Manual de usuario (`MANUAL_USUARIO.md`) y sus capturas (`img-usuario/`);
-│                           también contiene `docs/historico/` con documentación de planeación ya
-│                           superada (p. ej. `PLAN_DESARROLLO.md`), conservada como registro
+├── docs/                 → Manuales de usuario (`MANUAL_ADMINISTRADOR.md` y
+│                           `MANUAL_USUARIO_FINAL.md`, más `MANUAL_USUARIO.md` como índice corto que
+│                           enlaza a ambos) y sus capturas (`img-usuario/`); también contiene
+│                           `docs/historico/` con documentación de planeación ya superada (p. ej.
+│                           `PLAN_DESARROLLO.md`), conservada como registro
 ├── .github/workflows/ci.yml → Pipeline de GitHub Actions (sección 7.3)
 ├── .husky/pre-commit     → Hook de pre-commit (sección 7.2)
 ├── .env.example          → Plantilla de variables de entorno

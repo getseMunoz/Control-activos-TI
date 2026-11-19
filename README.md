@@ -381,5 +381,6 @@ Sistema de uso interno. Acceso restringido al personal autorizado.
 | [PERMISOS.md](./PERMISOS.md) | Matriz de permisos por rol |
 | [DECISIONES_TECNICAS.md](./DECISIONES_TECNICAS.md) | Por qué se eligió cada tecnología |
 | [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) | Backlog de producto, con estado real por historia |
-| [docs/MANUAL_USUARIO.md](./docs/MANUAL_USUARIO.md) | Manual de usuario, para los perfiles Administrador TI y Usuario Final |
+| [docs/MANUAL_ADMINISTRADOR.md](./docs/MANUAL_ADMINISTRADOR.md) | Manual de usuario para el perfil Administrador TI |
+| [docs/MANUAL_USUARIO_FINAL.md](./docs/MANUAL_USUARIO_FINAL.md) | Manual de usuario para el perfil Usuario Final |
 | [docs/historico/PLAN_DESARROLLO.md](./docs/historico/PLAN_DESARROLLO.md) | Plan histórico de desarrollo (no refleja el estado final del sistema) |
