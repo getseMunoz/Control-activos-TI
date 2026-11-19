@@ -299,9 +299,8 @@ export default async function DashboardPage() {
           Alertas operativas
         </h2>
         <div
+          className="grid grid-cols-1 lg:[grid-template-columns:repeat(2,1fr)]"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '12px',
           }}
         >
@@ -504,9 +503,8 @@ export default async function DashboardPage() {
 
       {/* Listas rápidas */}
       <div
+        className="grid grid-cols-1 lg:[grid-template-columns:repeat(3,1fr)]"
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '16px',
           alignItems: 'start',
         }}

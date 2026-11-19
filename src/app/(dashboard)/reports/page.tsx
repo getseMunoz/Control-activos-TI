@@ -349,7 +349,10 @@ export default async function ReportsPage() {
         <SimpleTable
           headers={['Número', 'Activo', 'Título', 'Tipo', 'Estado', 'Prioridad', 'Programado']}
           rows={data.recentActiveMaintenance.map((ot) => [
-            <span key="num" style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+            <span
+              key="num"
+              style={{ fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'nowrap' }}
+            >
               {ot.orderNumber}
             </span>,
             <Link

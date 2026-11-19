@@ -236,9 +236,8 @@ export default async function AssetDetailPage({ params }: Props) {
       </div>
 
       <div
+        className="grid grid-cols-1 lg:[grid-template-columns:1fr_1fr]"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
           gap: '16px',
           marginBottom: '16px',
         }}
