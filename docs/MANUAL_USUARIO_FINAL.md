@@ -13,8 +13,7 @@
 
 Este manual describe el uso del sistema de gestión de activos TI para el perfil **Usuario Final**.
 El sistema cuenta con dos perfiles de acceso: Administrador TI y Usuario Final; este documento
-cubre únicamente el segundo. Para el perfil Administrador TI, consultar
-`MANUAL_ADMINISTRADOR.md`.
+cubre únicamente el segundo.
 
 ---
 

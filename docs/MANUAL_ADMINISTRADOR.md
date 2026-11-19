@@ -357,8 +357,8 @@ pendiente, el enlace **Mis activos** aparece también en su menú, además de su
 de administración, para que pueda llegar a firmar; si no tiene nada pendiente, el enlace no se
 muestra.
 
-**Figura 31.** Portal "Mis activos" con un equipo pendiente de firma de recepción, visible en el
-menú de un Administrador TI junto con sus opciones habituales.
+**Figura 31.** Portal "Mis activos" con un equipo pendiente de firma de recepción (la pantalla es
+la misma para un Administrador TI que tenga un equipo asignado).
 ![Figura 31](img-usuario/15-mis-activos-pendiente-firma.png)
 
 **Figura 32.** Pantalla de firma de recepción, con la firma ya dibujada — el procedimiento es

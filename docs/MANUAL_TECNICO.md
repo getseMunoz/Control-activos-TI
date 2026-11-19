@@ -2,12 +2,13 @@
 
 ## Sistema de Gestión de Activos TI — CIPRIJAL
 
-**Versión:** 1.1
-**Fecha:** 2026-11-14
+**Versión:** 1.2
+**Fecha:** 2026-11-19
 
 > Este manual se redactó **únicamente a partir del código fuente real del repositorio** (rama
-> `main`; versión 1.0 al commit `55c20a0`, actualizado a esta versión 1.1 al commit `6acaad4`) y de
-> la documentación técnica existente en el proyecto (`README.md`, `ARQUITECTURA.md`,
+> `main`; versión 1.0 al commit `55c20a0`, actualizado a esta versión 1.1 al commit `6acaad4`; la
+> versión 1.2 incorpora la estimación de RAM de 4 GB y la división del manual de usuario en dos
+> documentos) y de la documentación técnica existente en el proyecto (`README.md`, `ARQUITECTURA.md`,
 > `DECISIONES_TECNICAS.md`, `MODELO_BASE_DATOS.md`, `REGLAS_NEGOCIO.md`, `PRODUCT_BACKLOG.md`).
 > Cada afirmación se verificó leyendo el archivo correspondiente. No contiene contraseñas, cadenas
 > de conexión ni secretos.
